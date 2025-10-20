@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+
+  proxy:
+    image: caddy:2
+    ports:
+      - "8080:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
