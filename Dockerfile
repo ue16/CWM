@@ -1,7 +1,13 @@
-FROM caddy:2
+FROM golang:1.25-alpine
 
-COPY index.html /usr/share/caddy/
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . ./
+RUN go build -o /server .
 
 EXPOSE 80
 
-CMD ["caddy", "file-server", "-r", "/usr/share/caddy/"]
+CMD ["/server"]

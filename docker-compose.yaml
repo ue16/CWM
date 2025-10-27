@@ -1,6 +1,12 @@
 services:
   web:
     build: .
+    environment:
+      DATABASE_URL: postgres://server:testpass@database:5432/kanban
+    networks:
+      - private
+    depends_on:
+      - database
 
   proxy:
     image: caddy:2
@@ -8,3 +14,26 @@ services:
       - "8080:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - private
+      - public
+
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: server
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: kanban
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./seed:/docker-entrypoint-initdb.d:ro
+    networks:
+      - private
+
+networks:
+  private:
+    internal: true
+  public:
+
+volumes:
+  postgres_data:
