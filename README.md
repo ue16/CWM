@@ -12,6 +12,8 @@ Ihr werdet lernen, wie man:
 
 Am Ende habt ihr eine voll funktionsfähige PWA, die ihr in eurem Portfolio präsentieren könnt.
 
+Die Aktuelle Anleitung, um das Projekt zu starten ist in [HOWTO.md](./HOWTO.md) zu finden.
+
 ## 📌 Projektübersicht
 
 Das Projekt besteht aus 13 Übungen, in denen ihr schrittweise die Anwendung entwickelt. Jede Übung baut auf der vorherigen auf und führt neue Technologien und Konzepte ein.
