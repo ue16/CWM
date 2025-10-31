@@ -1,0 +1,213 @@
+/* Unified styles for Kanban app
+   Extracted from templates/index.html.tmpl and templates/board.html.tmpl
+*/
+
+/* Base / typography */
+body {
+	font-family:
+		system-ui,
+		-apple-system,
+		"Segoe UI",
+		Roboto,
+		"Helvetica Neue",
+		Arial;
+	padding: 24px;
+	color: #111;
+	line-height: 1.4;
+	background: #fff;
+}
+
+h1 {
+	margin-bottom: 16px;
+	font-weight: 700;
+}
+
+/* INDEX PAGE: boards list
+   The index uses <div class="boards"> containing multiple .board entries.
+   Use the more specific selector to avoid clashing with the board view .board container.
+*/
+.boards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.boards .board {
+	padding: 12px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	max-width: 640px;
+	background: #fff;
+}
+
+.boards .board a {
+	text-decoration: none;
+	color: #111;
+	font-weight: 600;
+}
+
+/* Small utility used on index and board for fallback text blocks */
+.fallback {
+	white-space: pre-wrap;
+	background: #f7f7f7;
+	padding: 12px;
+	border-radius: 6px;
+	border: 1px solid #eee;
+	margin-top: 12px;
+}
+
+/* BOARD PAGE: main board container
+   The board page places the columns inside a top-level .board element directly under body.
+   Use a selector that targets that layout while leaving .boards .board untouched.
+*/
+body > .board {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+}
+
+/* Column card styles */
+.column {
+	background: #f5f7fa;
+	padding: 12px;
+	border-radius: 8px;
+	width: 400px;
+	min-height: 80px;
+	box-shadow: 0 1px 0 rgba(16, 22, 26, 0.04);
+	box-sizing: border-box;
+}
+
+.column-header {
+	margin-bottom: 8px;
+}
+
+/* Column title row */
+.col-title {
+	font-weight: 700;
+	margin-bottom: 8px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Controls next to column title and on cards */
+.col-controls,
+.card-controls {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+
+/* Card styles */
+.card {
+	background: #fff;
+	padding: 8px 10px;
+	border-radius: 6px;
+	margin-bottom: 8px;
+	box-shadow: 0 1px 0 rgba(16, 22, 26, 0.06);
+	word-break: break-word;
+}
+
+.card .title {
+	font-weight: 600;
+}
+
+.card .desc {
+	margin-top: 6px;
+	color: #444;
+	font-size: 0.95em;
+	white-space: pre-wrap;
+}
+
+/* Back link on board page */
+a.back {
+	display: inline-block;
+	margin-bottom: 12px;
+	color: #0366d6;
+	text-decoration: none;
+}
+
+/* Small button style used widely */
+.small {
+	font-size: 0.9em;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid #ddd;
+	background: #fff;
+	cursor: pointer;
+}
+
+/* Muted text */
+.muted {
+	color: #666;
+	font-size: 0.95em;
+}
+
+/* Inline forms used for many small actions */
+form.inline {
+	display: inline;
+	margin: 0;
+	padding: 0;
+}
+
+/* Form controls: inputs, textareas, selects */
+input[type="text"],
+textarea,
+select {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 6px 8px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-family: inherit;
+	font-size: 1em;
+	color: inherit;
+	background: #fff;
+}
+
+/* Make inline text inputs used in compact forms a little narrower by default
+   where templates provided inline width; forms can override with inline styles if needed.
+*/
+form.inline input[type="text"] {
+	display: inline-block;
+	width: auto;
+	vertical-align: middle;
+}
+
+/* Add-card area spacing */
+.add-card {
+	margin-top: 8px;
+}
+
+/* Basic reset for buttons and form elements to have consistent look */
+button {
+	font: inherit;
+	line-height: inherit;
+}
+
+/* Confirm dialogs use native confirm(); ensure cursor shows clickable */
+button[type="submit"],
+input[type="submit"] {
+	cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+	body > .board {
+		flex-direction: column;
+	}
+	.column {
+		width: 100%;
+	}
+}
+
+/* Minor utilities for spacing often used inline in templates */
+.form-row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* End of unified stylesheet */

@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kanban — {{.Board.Name}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="back" href="/">&larr; Back to boards</a>
+  <h1>{{.Board.Name}}</h1>
+
+  <!-- Create new column -->
+  <div class="form-row">
+    <form action="/board/{{.Board.ID}}/columns/add" method="post" class="form-row">
+      <input type="text" name="name" placeholder="New column name" required>
+      <button type="submit" class="small">Add column</button>
+    </form>
+  </div>
+
+  <div class="board">
+    {{range .Columns}}{{ $col := .Column }}
+      <div class="column">
+        <div class="column-header">
+          <div class="col-title">
+            <span>{{.Column.Name}}</span>
+            <span class="col-controls">
+              <!-- Edit column name (inline) -->
+              <form class="inline" action="/board/{{$.Board.ID}}/column/{{.Column.ID}}/edit" method="post">
+                <input type="text" name="name" value="{{.Column.Name}}" aria-label="Edit column name">
+                <button class="small" type="submit">Save</button>
+              </form>
+
+              <!-- Move column left/right -->
+              <form class="inline" action="/board/{{$.Board.ID}}/column/{{.Column.ID}}/move" method="post">
+                <input type="hidden" name="direction" value="left">
+                <button class="small" type="submit">&larr;</button>
+              </form>
+              <form class="inline" action="/board/{{$.Board.ID}}/column/{{.Column.ID}}/move" method="post">
+                <input type="hidden" name="direction" value="right">
+                <button class="small" type="submit">&rarr;</button>
+              </form>
+
+              <!-- Delete column -->
+              <form class="inline" action="/board/{{$.Board.ID}}/column/{{.Column.ID}}/delete" method="post" onsubmit="return confirm('Delete column {{.Column.Name}}?')">
+                <button class="small" type="submit">Delete</button>
+              </form>
+            </span>
+          </div>
+        </div>
+
+        {{if .Cards}}
+          {{range .Cards}}
+            <div class="card">
+              <div class="title">{{.Title}}</div>
+              {{if .Description}}
+                <div class="desc">{{.Description}}</div>
+              {{end}}
+
+              <div class="card-controls">
+                <!-- Edit card inline -->
+                <form class="inline" action="/card/{{.ID}}/edit" method="post">
+                  <input type="text" name="title" value="{{.Title}}" placeholder="Title" required>
+                  <textarea name="description" placeholder="Description" rows="2">{{.Description}}</textarea>
+                  <button class="small" type="submit">Save</button>
+                </form>
+
+                <!-- Move card to another column -->
+                <form class="inline" action="/card/{{.ID}}/move" method="post">
+                  <select name="target_column_id" aria-label="Move card to column">
+                    {{range $.Columns}}
+                      <option value="{{.Column.ID}}" {{if eq .Column.ID $col.ID}}selected{{end}}>{{.Column.Name}}</option>
+                    {{end}}
+                  </select>
+                  <button class="small" type="submit">Move</button>
+                </form>
+
+                <!-- Delete card -->
+                <form class="inline" action="/card/{{.ID}}/delete" method="post" onsubmit="return confirm('Delete card {{.Title}}?')">
+                  <button class="small" type="submit">Delete</button>
+                </form>
+              </div>
+            </div>
+          {{end}}
+        {{else}}
+          <div class="muted">No cards</div>
+        {{end}}
+
+        <!-- Add card to this column -->
+        <div class="add-card">
+          <form action="/board/{{$.Board.ID}}/column/{{.Column.ID}}/cards/add" method="post">
+            <input type="text" name="title" placeholder="Card title" required>
+            <textarea name="description" placeholder="Description (optional)" rows="2"></textarea>
+            <div class="form-row">
+              <button type="submit" class="small">Add card</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    {{end}}
+  </div>
+</body>
+</html>

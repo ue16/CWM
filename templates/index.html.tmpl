@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kanban — Boards</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <h1>Kanban Boards</h1>
+
+  <!-- Create board form -->
+  <form action="/boards" method="post" style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
+    <input type="text" name="name" placeholder="New board name" required style="padding:8px; border:1px solid #ddd; border-radius:6px;">
+    <button type="submit" style="padding:8px 12px; border-radius:6px; border:1px solid #ccc; background:#0366d6; color:#fff; cursor:pointer;">Create board</button>
+  </form>
+
+  {{if .Boards}}
+    <div class="boards">
+      {{range .Boards}}
+        <div class="board">
+          <a href="/board/{{.ID}}">{{.Name}}</a>
+          <!-- Delete board form -->
+          <form action="/board/{{.ID}}/delete" method="post" style="display:inline-block; margin-left:12px;">
+            <button type="submit" onclick="return confirm('Delete board {{.Name}}?')" style="padding:6px 10px; border-radius:6px; border:1px solid #e1e4e8; background:#fff; cursor:pointer;">Delete</button>
+          </form>
+        </div>
+      {{end}}
+    </div>
+  {{else}}
+    <p>No boards available.</p>
+  {{end}}
+</body>
+</html>
