@@ -16,7 +16,6 @@ COPY --from=builder /server /app/server
 COPY static/* /app/static/
 COPY templates/* /app/templates/
 
-
 EXPOSE 80
 
 CMD ["/app/server"]

@@ -53,9 +53,10 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("ListBoards: %v", err)
 		return
 	}
-	if err := s.templates["index"].Execute(w, struct {
+	type bds struct {
 		Boards []Board
-	}{Boards: boards}); err != nil {
+	}
+	if err := s.templates["index"].Execute(w, bds{Boards: boards}); err != nil {
 		log.Printf("render index: %v", err)
 	}
 }
