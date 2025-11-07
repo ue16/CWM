@@ -16,7 +16,7 @@ func (s *Server) handleCardEdit(w http.ResponseWriter, r *http.Request, id int) 
 	desc := r.FormValue("description")
 
 	ctx := r.Context()
-	card, err := s.db.GetCardByID(ctx, id)
+	card, err := s.store.GetCardByID(ctx, id)
 	if err != nil {
 		http.Error(w, "card not found", http.StatusNotFound)
 		log.Printf("GetCardByID %d: %v", id, err)
@@ -24,12 +24,12 @@ func (s *Server) handleCardEdit(w http.ResponseWriter, r *http.Request, id int) 
 	}
 	card.Title = title
 	card.Description = desc
-	if err := s.db.UpdateCard(ctx, card); err != nil {
+	if err := s.store.UpdateCard(ctx, card); err != nil {
 		http.Error(w, "failed to update card", http.StatusInternalServerError)
 		log.Printf("UpdateCard %d: %v", id, err)
 		return
 	}
-	col, err := s.db.GetColumnByID(ctx, card.ColumnID)
+	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -52,7 +52,7 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 			return
 		}
 		// compute new position as end of target column
-		cards, err := s.db.GetCardsByColumnID(ctx, targetID)
+		cards, err := s.store.GetCardsByColumnID(ctx, targetID)
 		if err != nil {
 			http.Error(w, "failed to load cards", http.StatusInternalServerError)
 			log.Printf("GetCardsByColumnID %d: %v", targetID, err)
@@ -63,7 +63,7 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 			pos = cards[len(cards)-1].Position + 1
 		}
 
-		card, err := s.db.GetCardByID(ctx, id)
+		card, err := s.store.GetCardByID(ctx, id)
 		if err != nil {
 			http.Error(w, "card not found", http.StatusNotFound)
 			log.Printf("GetCardByID %d: %v", id, err)
@@ -71,12 +71,12 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 		}
 		card.ColumnID = targetID
 		card.Position = pos
-		if err := s.db.UpdateCard(ctx, card); err != nil {
+		if err := s.store.UpdateCard(ctx, card); err != nil {
 			http.Error(w, "failed to move card", http.StatusInternalServerError)
 			log.Printf("UpdateCard %d: %v", id, err)
 			return
 		}
-		col, err := s.db.GetColumnByID(ctx, targetID)
+		col, err := s.store.GetColumnByID(ctx, targetID)
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -87,19 +87,19 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 
 	// Otherwise handle directional move (left/right)
 	dir := r.FormValue("direction")
-	card, err := s.db.GetCardByID(ctx, id)
+	card, err := s.store.GetCardByID(ctx, id)
 	if err != nil {
 		http.Error(w, "card not found", http.StatusNotFound)
 		log.Printf("GetCardByID %d: %v", id, err)
 		return
 	}
-	col, err := s.db.GetColumnByID(ctx, card.ColumnID)
+	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
 	if err != nil {
 		http.Error(w, "failed to load column", http.StatusInternalServerError)
 		log.Printf("GetColumnByID %d: %v", card.ColumnID, err)
 		return
 	}
-	cols, err := s.db.GetColumnsByBoardID(ctx, col.BoardID)
+	cols, err := s.store.GetColumnsByBoardID(ctx, col.BoardID)
 	if err != nil {
 		http.Error(w, "failed to load columns", http.StatusInternalServerError)
 		log.Printf("GetColumnsByBoardID %d: %v", col.BoardID, err)
@@ -127,7 +127,7 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 		return
 	}
 	// append to end of dest column
-	destCards, err := s.db.GetCardsByColumnID(ctx, destCol.ID)
+	destCards, err := s.store.GetCardsByColumnID(ctx, destCol.ID)
 	if err != nil {
 		http.Error(w, "failed to load cards", http.StatusInternalServerError)
 		log.Printf("GetCardsByColumnID %d: %v", destCol.ID, err)
@@ -139,7 +139,7 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 	}
 	card.ColumnID = destCol.ID
 	card.Position = pos
-	if err := s.db.UpdateCard(ctx, card); err != nil {
+	if err := s.store.UpdateCard(ctx, card); err != nil {
 		http.Error(w, "failed to move card", http.StatusInternalServerError)
 		log.Printf("UpdateCard %d: %v", id, err)
 		return
@@ -150,19 +150,19 @@ func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) 
 func (s *Server) handleCardDelete(w http.ResponseWriter, r *http.Request, id int) {
 	ctx := r.Context()
 	// get card to discover board
-	card, err := s.db.GetCardByID(ctx, id)
+	card, err := s.store.GetCardByID(ctx, id)
 	if err != nil {
 		http.Error(w, "card not found", http.StatusNotFound)
 		log.Printf("GetCardByID %d: %v", id, err)
 		return
 	}
-	col, err := s.db.GetColumnByID(ctx, card.ColumnID)
+	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
 	if err != nil {
 		http.Error(w, "failed to load column", http.StatusInternalServerError)
 		log.Printf("GetColumnByID %d: %v", card.ColumnID, err)
 		return
 	}
-	if err := s.db.DeleteCard(ctx, id); err != nil {
+	if err := s.store.DeleteCard(ctx, id); err != nil {
 		http.Error(w, "failed to delete card", http.StatusInternalServerError)
 		log.Printf("DeleteCard %d: %v", id, err)
 		return

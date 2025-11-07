@@ -9,45 +9,51 @@ import (
 )
 
 type Server struct {
-	db        *DB
+	store     Store
 	templates map[string]*template.Template
 }
 
-// Serve starts an HTTP server that renders simple Kanban pages using Go html/templates.
-func Serve(addr string, db *DB) error {
+// Prepare creates and returns an http.Handler that renders simple Kanban pages using Go html/templates.
+//
+// Note: the function keeps the same parameters so existing call sites don't need to change,
+// but it returns an http.Handler instead of starting the server. The caller can then
+// start the server (e.g. http.ListenAndServe) or use the handler for testing.
+func PrepareServer(addr string, store Store) http.Handler {
 	s := Server{
-		db: db,
+		store: store,
 		templates: map[string]*template.Template{
 			"index": template.Must(template.ParseFiles("templates/index.html.tmpl")),
 			"board": template.Must(template.ParseFiles("templates/board.html.tmpl")),
 		},
 	}
 
+	// Create an isolated ServeMux instead of registering on the default global mux.
+	mux := http.NewServeMux()
+
 	// Serve static assets (CSS, JS, images) from ./static/ at URL path /static/.
 	// Place your extracted unified CSS at static/styles.css (or other assets under static/).
 	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Index handler (GET)
-	http.HandleFunc("/", s.indexHandler)
+	mux.HandleFunc("/", s.indexHandler)
 	// Create board (POST)
-	http.HandleFunc("/boards", s.createBoardHandler)
+	mux.HandleFunc("/boards", s.createBoardHandler)
 
 	// Board handler: /board/{id} (GET) and board-scoped POST actions (e.g. /board/{id}/column/...)
-	http.HandleFunc("/board/", s.boardHandler)
+	mux.HandleFunc("/board/", s.boardHandler)
 
 	// Card-scoped POST actions (e.g. /card/{id}/edit)
-	http.HandleFunc("/card/", s.cardHandler)
+	mux.HandleFunc("/card/", s.cardHandler)
 
-	// Start server.
-	log.Printf("starting server on %s", addr)
-	return http.ListenAndServe(addr, nil)
+	// Return the configured handler for the caller to use (start server or test).
+	return mux
 }
 
 func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	boards, err := s.db.ListBoards(r.Context())
+	boards, err := s.store.ListBoards(r.Context())
 	if err != nil {
 		http.Error(w, "failed to list boards", http.StatusInternalServerError)
 		log.Printf("ListBoards: %v", err)
@@ -75,7 +81,7 @@ func (s *Server) createBoardHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "name required", http.StatusBadRequest)
 		return
 	}
-	if _, err := s.db.CreateBoard(r.Context(), name); err != nil {
+	if _, err := s.store.CreateBoard(r.Context(), name); err != nil {
 		http.Error(w, "failed to create board", http.StatusInternalServerError)
 		log.Printf("CreateBoard: %v", err)
 		return
@@ -193,14 +199,14 @@ func (s *Server) boardHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Default: GET rendering of the board page (existing behavior)
 	ctx := r.Context()
-	board, err := s.db.GetBoardByID(ctx, id)
+	board, err := s.store.GetBoardByID(ctx, id)
 	if err != nil {
 		http.Error(w, "board not found", http.StatusNotFound)
 		log.Printf("GetBoardByID %d: %v", id, err)
 		return
 	}
 
-	cols, err := s.db.GetColumnsByBoardID(ctx, id)
+	cols, err := s.store.GetColumnsByBoardID(ctx, id)
 	if err != nil {
 		http.Error(w, "failed to load columns", http.StatusInternalServerError)
 		log.Printf("GetColumnsByBoardID %d: %v", id, err)
@@ -214,7 +220,7 @@ func (s *Server) boardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	var colsWith []ColWithCards
 	for _, c := range cols {
-		cards, err := s.db.GetCardsByColumnID(ctx, c.ID)
+		cards, err := s.store.GetCardsByColumnID(ctx, c.ID)
 		if err != nil {
 			http.Error(w, "failed to load cards", http.StatusInternalServerError)
 			log.Printf("GetCardsByColumnID %d: %v", c.ID, err)

@@ -8,6 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// Assertion to ensure DB implements the Store interface
+var _ Store = (*DB)(nil)
+
 // DB wraps a pgxpool.Pool and provides CRUD helpers for the Kanban models.
 type DB struct {
 	pool *pgxpool.Pool

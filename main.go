@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -37,5 +38,11 @@ func main() {
 	}
 	defer db.Close()
 
-	internal.Serve(":80", db)
+	addr := ":80"
+	handler := internal.PrepareServer(addr, db)
+
+	log.Printf("starting server on %s", addr)
+	if err := http.ListenAndServe(addr, handler); err != nil {
+		log.Fatalf("server failed: %v", err)
+	}
 }
