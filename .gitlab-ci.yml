@@ -1,0 +1,11 @@
+stages:
+  - build
+
+go-build:
+  stage: build
+  image: golang:1.25
+  script:
+    - go build -o ./server .
+  artifacts:
+    paths:
+      - ./server
