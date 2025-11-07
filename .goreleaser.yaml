@@ -1,0 +1,12 @@
+gitlab_urls:
+  api: https://git.uni-due.de/api/v4/
+  download: https://git.uni-due.de
+
+archives:
+  - files:
+      - "templates/*"
+      - "static/*"
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]

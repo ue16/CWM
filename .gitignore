@@ -1,0 +1,6 @@
+.cache/
+dist/
+
+coverage.*
+
+/server
