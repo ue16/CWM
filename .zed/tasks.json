@@ -1,0 +1,16 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+//
+// Example:
+[
+	{
+		"label": "test-all",
+		"command": "go",
+		"args": ["test", "./...", "-v"],
+		"reveal": "no_focus",
+		"hide": "on_success",
+		"shell": "system",
+		"show_summary": false,
+		"show_command": true,
+		"tags": ["test"]
+	}
+]
