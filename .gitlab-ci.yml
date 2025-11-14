@@ -28,6 +28,7 @@ go-test:
   script:
     - go test ./... -v -coverprofile=coverage.out
     - go tool cover -html coverage.out -o coverage.html
+  coverage: '/coverage: \d+.\d+% of statements/'
   artifacts:
     paths:
       - coverage.html
