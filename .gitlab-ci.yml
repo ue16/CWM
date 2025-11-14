@@ -10,7 +10,8 @@ default:
   image: golang:1.25
   before_script:
     - mkdir -p .cache
-    - go mod download
+    - ls -al
+    - go -C ./backend/ mod download
   cache:
     paths:
       - .cache
@@ -18,20 +19,20 @@ default:
 go-build:
   stage: build
   script:
-    - go build -o ./server .
+    - go -C ./backend/ build -o ./server .
   artifacts:
     paths:
-      - ./server
+      - ./backend/server
 
 go-test:
   stage: test
   script:
-    - go test ./... -v -coverprofile=coverage.out
-    - go tool cover -html coverage.out -o coverage.html
+    - go -C ./backend/ test ./... -v -coverprofile=coverage.out
+    - go -C ./backend/ tool cover -html coverage.out -o coverage.html
   coverage: '/coverage: \d+.\d+% of statements/'
   artifacts:
     paths:
-      - coverage.html
+      - backend/coverage.html
 
 go-release:
   stage: release

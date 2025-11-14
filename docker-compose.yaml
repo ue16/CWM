@@ -1,6 +1,6 @@
 services:
   web:
-    build: .
+    build: ./backend/
     environment:
       DATABASE_URL: postgres://server:testpass@database:5432/kanban
     networks:
