@@ -34,6 +34,20 @@ go-test:
     paths:
       - backend/coverage.html
 
+frontend-build:
+  stage: build
+  image: node:24
+  before_script:
+    - yarn --cwd ./frontend/ install --frozen-lockfile --cache-folder ../.yarn
+  script:
+    - yarn --cwd ./frontend/ build
+  cache:
+    paths:
+      - .yarn
+  artifacts:
+    paths:
+      - frontend/dist/
+
 go-release:
   stage: release
   image:

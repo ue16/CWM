@@ -8,6 +8,14 @@ services:
     depends_on:
       - database
 
+  frontend:
+    build: ./frontend/
+    ports:
+      - "8081:80"
+    networks:
+      - private
+      - public
+
   proxy:
     image: caddy:2
     ports:
