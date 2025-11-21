@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"html/template"
 	"io"
 	"net/http"
@@ -19,20 +20,21 @@ func newTestServer(store Store) *Server {
 	return &Server{store: store, templates: tpls}
 }
 
-func TestIndexHandler_ShowsBoards(t *testing.T) {
+func TestShowsBoards(t *testing.T) {
+	b := []Board{
+		{ID: 1, Name: "Alpha"},
+		{ID: 2, Name: "Beta"},
+	}
 	mock := &MockStore{
 		ListBoardsFunc: func(ctx context.Context) ([]Board, error) {
-			return []Board{
-				{ID: 1, Name: "Alpha"},
-				{ID: 2, Name: "Beta"},
-			}, nil
+			return b, nil
 		},
 	}
 	s := newTestServer(mock)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/boards", nil)
 	rr := httptest.NewRecorder()
-	s.indexHandler(rr, req)
+	s.listBoards(rr, req)
 
 	resp := rr.Result()
 	defer resp.Body.Close()
@@ -42,7 +44,7 @@ func TestIndexHandler_ShowsBoards(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	str := string(body)
-	if !strings.Contains(str, "Alpha") || !strings.Contains(str, "Beta") {
+	if expect, _ := json.Marshal(b); string(expect) != str {
 		t.Fatalf("response body missing board names: %s", str)
 	}
 }

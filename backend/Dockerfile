@@ -2,11 +2,13 @@ FROM golang:1.25-alpine AS builder
 
 WORKDIR /workspace
 
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
 COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 COPY ./ ./
-RUN go build -o /server .
+RUN swag init && go build -o /server .
 
 
 FROM alpine:latest

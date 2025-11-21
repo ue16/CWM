@@ -1,11 +1,14 @@
 services:
   backend:
     build: ./backend/
+    ports:
+      - "8082:80"
     environment:
       PORT: "80"
       DATABASE_URL: postgres://server:testpass@database:5432/kanban
     networks:
       - private
+      - public
     depends_on:
       - database
 
@@ -33,11 +36,14 @@ services:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: testpass
       POSTGRES_DB: kanban
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./seed:/docker-entrypoint-initdb.d:ro
     networks:
       - private
+      - public
 
 networks:
   private:

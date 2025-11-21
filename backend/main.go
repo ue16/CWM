@@ -2,14 +2,29 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
+	_ "oskar/cwm25/docs"
 	"oskar/cwm25/internal"
 )
 
+//	@title			CWM Kanban
+//	@version		0.2
+//	@description	This is a small kanban server.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	API Support
+//	@contact.url	http://www.swagger.io/support
+//	@contact.email	support@swagger.io
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @BasePath	/
 func main() {
 	connString := os.Getenv("DATABASE_URL")
 	if connString == "" {

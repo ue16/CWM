@@ -1,14 +1,21 @@
 package internal
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Server struct {
+	addr      string
 	store     Store
 	templates map[string]*template.Template
 }
@@ -19,51 +26,53 @@ type Server struct {
 // but it returns an http.Handler instead of starting the server. The caller can then
 // start the server (e.g. http.ListenAndServe) or use the handler for testing.
 func PrepareServer(addr string, store Store) http.Handler {
-	s := Server{
-		store: store,
-		templates: map[string]*template.Template{
-			"index": template.Must(template.ParseFiles("templates/index.html.tmpl")),
-			"board": template.Must(template.ParseFiles("templates/board.html.tmpl")),
-		},
+	s := &Server{
+		addr,
+		store,
+		nil,
 	}
+	r := chi.NewRouter()
 
-	// Create an isolated ServeMux instead of registering on the default global mux.
-	mux := http.NewServeMux()
+	// A good base middleware stack
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
-	// Serve static assets (CSS, JS, images) from ./static/ at URL path /static/.
-	// Place your extracted unified CSS at static/styles.css (or other assets under static/).
-	fs := http.FileServer(http.Dir("static"))
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	// Cancels the request on timeout
+	r.Use(middleware.Timeout(60 * time.Second))
 
-	// Index handler (GET)
-	mux.HandleFunc("/", s.indexHandler)
-	// Create board (POST)
-	mux.HandleFunc("/boards", s.createBoardHandler)
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("up"))
+	})
 
-	// Board handler: /board/{id} (GET) and board-scoped POST actions (e.g. /board/{id}/column/...)
-	mux.HandleFunc("/board/", s.boardHandler)
-
-	// Card-scoped POST actions (e.g. /card/{id}/edit)
-	mux.HandleFunc("/card/", s.cardHandler)
+	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
+	r.Route("/api/v2", func(r chi.Router) {
+		r.Get("/boards", s.listBoards)
+	})
 
 	// Return the configured handler for the caller to use (start server or test).
-	return mux
+	return r
 }
 
-func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+// @Summary	List all boards
+// @Description Lists all existing boards.
+// @Router		/boards [get]
+// @Success	200	{array}	internal.Board
+func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	boards, err := s.store.ListBoards(r.Context())
 	if err != nil {
-		http.Error(w, "failed to list boards", http.StatusInternalServerError)
-		log.Printf("ListBoards: %v", err)
+		http.Error(w, "{\"err\": \"failed to list boards\"", http.StatusInternalServerError)
 		return
 	}
-	type bds struct {
-		Boards []Board
-	}
-	if err := s.templates["index"].Execute(w, bds{Boards: boards}); err != nil {
-		log.Printf("render index: %v", err)
+
+	if boards, err := json.Marshal(boards); err == nil {
+		w.Write(boards)
+	} else {
+		http.Error(w, "{\"err\": \"failed to marshal boards\"}", http.StatusInternalServerError)
+		return
 	}
 }
 
