@@ -11,6 +11,7 @@ default:
   before_script:
     - mkdir -p .cache
     - ls -al
+    - go install github.com/swaggo/swag/cmd/swag@latest
     - go -C ./backend/ mod download
   cache:
     paths:
