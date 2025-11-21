@@ -5,6 +5,7 @@ import "context"
 type Store interface {
 	ListBoards(ctx context.Context) ([]Board, error)
 	CreateBoard(ctx context.Context, name string) (Board, error)
+	UpdateBoard(ctx context.Context, b Board) error
 	GetBoardByID(ctx context.Context, id int) (Board, error)
 	GetColumnsByBoardID(ctx context.Context, boardID int) ([]Column, error)
 	GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, error)

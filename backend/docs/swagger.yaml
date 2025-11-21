@@ -1,0 +1,518 @@
+basePath: /
+definitions:
+  internal.Board:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal.Card:
+    properties:
+      column_id:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      position:
+        type: integer
+      title:
+        type: string
+    type: object
+  internal.Column:
+    properties:
+      board_id:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      position:
+        type: integer
+    type: object
+  internal.idRequest:
+    properties:
+      id:
+        type: integer
+    type: object
+  internal.nameRequest:
+    properties:
+      name:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a small kanban server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: CWM Kanban
+  version: "0.2"
+paths:
+  /api/v2/board/:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a board by its ID
+      parameters:
+      - description: Board id
+        in: body
+        name: board
+        required: true
+        schema:
+          $ref: '#/definitions/internal.idRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Board deleted successfully
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Board not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to delete board
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Board
+      tags:
+      - Boards
+    post:
+      consumes:
+      - application/json
+      description: Create a new board
+      parameters:
+      - description: Board object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal.nameRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created board
+          schema:
+            $ref: '#/definitions/internal.Board'
+        "400":
+          description: Invalid input or missing name
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create board
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Board
+      tags:
+      - Boards
+    put:
+      consumes:
+      - application/json
+      description: Update a board's details
+      parameters:
+      - description: Board object
+        in: body
+        name: board
+        required: true
+        schema:
+          $ref: '#/definitions/internal.Board'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Board updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid JSON body or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update board
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Board
+      tags:
+      - Boards
+  /api/v2/board/{boardId}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a board by its ID
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Board details
+          schema:
+            $ref: '#/definitions/internal.Board'
+        "400":
+          description: Invalid board ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Board not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to encode response
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Board
+      tags:
+      - Boards
+  /api/v2/boards:
+    get:
+      consumes:
+      - application/json
+      description: Lists all existing boards.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of boards
+          schema:
+            items:
+              $ref: '#/definitions/internal.Board'
+            type: array
+        "500":
+          description: Failed to list boards
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all boards
+      tags:
+      - All-Boards
+  /api/v2/card/:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a card by its ID
+      parameters:
+      - description: Card id
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/internal.idRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Card deleted successfully
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Card not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to delete card
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Card
+      tags:
+      - Cards
+    post:
+      consumes:
+      - application/json
+      description: Create a new card in a specific column
+      parameters:
+      - description: Card creation payload
+        in: body
+        name: card
+        required: true
+        schema:
+          type: object
+      - description: Column ID
+        in: body
+        name: card.column_id
+        required: true
+        schema:
+          type: integer
+      - description: Card title
+        in: body
+        name: card.title
+        required: true
+        schema:
+          type: string
+      - description: Card description
+        in: body
+        name: card.description
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal.Card'
+        "400":
+          description: Invalid input or missing required fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create card
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Card
+      tags:
+      - Cards
+    put:
+      consumes:
+      - application/json
+      description: Update a card's details
+      parameters:
+      - description: Card object
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/internal.Card'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Card updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid JSON body or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update card
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Card
+      tags:
+      - Cards
+  /api/v2/card/{columnId}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch all cards for a specific column
+      parameters:
+      - description: Column ID
+        in: path
+        name: columnId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Get Cards
+      tags:
+      - Cards
+  /api/v2/column/:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a column by its ID
+      parameters:
+      - description: Column ID
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal.idRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Column deleted successfully
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Column not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to delete column
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete Column
+      tags:
+      - Columns
+    post:
+      consumes:
+      - application/json
+      description: Create a new column in a specific board
+      parameters:
+      - description: Column creation payload
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      - description: Board ID
+        in: body
+        name: input.board_id
+        required: true
+        schema:
+          type: integer
+      - description: Column name
+        in: body
+        name: input.name
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal.Column'
+        "400":
+          description: Invalid input or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to create column
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create Column
+      tags:
+      - Columns
+    put:
+      consumes:
+      - application/json
+      description: Update a column's details
+      parameters:
+      - description: Column object
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal.Column'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Column updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid JSON body or missing fields
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to update column
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update Column
+      tags:
+      - Columns
+  /api/v2/column/{boardId}:
+    get:
+      consumes:
+      - application/json
+      description: Fetch all columns for a specific board
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal.Column'
+            type: array
+        "400":
+          description: Invalid board ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to fetch columns
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Columns
+      tags:
+      - Columns
+swagger: "2.0"

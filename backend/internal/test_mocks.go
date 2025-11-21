@@ -7,6 +7,7 @@ type MockStore struct {
 	ListBoardsFunc          func(ctx context.Context) ([]Board, error)
 	CreateBoardFunc         func(ctx context.Context, name string) (Board, error)
 	GetBoardByIDFunc        func(ctx context.Context, id int) (Board, error)
+	UpdateBoardFunc         func(ctx context.Context, b Board) error
 	GetColumnsByBoardIDFunc func(ctx context.Context, boardID int) ([]Column, error)
 	GetCardsByColumnIDFunc  func(ctx context.Context, columnID int) ([]Card, error)
 	GetColumnByIDFunc       func(ctx context.Context, id int) (Column, error)
@@ -25,6 +26,9 @@ func (m *MockStore) ListBoards(ctx context.Context) ([]Board, error) {
 }
 func (m *MockStore) CreateBoard(ctx context.Context, name string) (Board, error) {
 	return m.CreateBoardFunc(ctx, name)
+}
+func (m *MockStore) UpdateBoard(ctx context.Context, b Board) error {
+	return m.UpdateBoardFunc(ctx, b)
 }
 func (m *MockStore) GetBoardByID(ctx context.Context, id int) (Board, error) {
 	return m.GetBoardByIDFunc(ctx, id)

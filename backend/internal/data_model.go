@@ -50,3 +50,15 @@ func (c Card) String() string {
 	}
 	return fmt.Sprintf("Card{ID:%d, ColumnID:%d, Title:%q, Description:%q, Position:%d}", c.ID, c.ColumnID, c.Title, desc, c.Position)
 }
+
+/*
+ * Request structs
+ */
+
+type idRequest struct {
+	ID int `json:"id"`
+}
+
+type nameRequest struct {
+	Name string `json:"name"`
+}

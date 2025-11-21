@@ -1,163 +1,182 @@
 package internal
 
 import (
-	"fmt"
-	"log"
+	"encoding/json"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleBoardDelete(w http.ResponseWriter, r *http.Request, boardID int) {
-	ctx := r.Context()
-	if err := s.store.DeleteBoard(ctx, boardID); err != nil {
-		http.Error(w, "failed to delete board", http.StatusInternalServerError)
-		log.Printf("DeleteBoard %d: %v", boardID, err)
-		return
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
+// @Summary List all boards
+// @Description Lists all existing boards.
+// @Tags All-Boards
+// @Accept json
+// @Produce json
+// @Success 200 {array} internal.Board "List of boards"
+// @Failure 500 {object} map[string]string "Failed to list boards"
+// @Router /api/v2/boards [get]
+func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-func (s *Server) handleBoardCreateColumn(w http.ResponseWriter, r *http.Request, boardID int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
-		return
-	}
-	name := r.FormValue("name")
-	if name == "" {
-		http.Error(w, "name required", http.StatusBadRequest)
-		return
-	}
-	ctx := r.Context()
-	cols, err := s.store.GetColumnsByBoardID(ctx, boardID)
+	boards, err := s.store.ListBoards(r.Context())
 	if err != nil {
-		http.Error(w, "failed to load columns", http.StatusInternalServerError)
-		log.Printf("GetColumnsByBoardID %d: %v", boardID, err)
+		http.Error(w, "{\"err\": \"failed to list boards\"", http.StatusInternalServerError)
 		return
 	}
-	pos := 1
-	if len(cols) > 0 {
-		pos = cols[len(cols)-1].Position + 1
-	}
-	c := Column{BoardID: boardID, Name: name, Position: pos}
-	if _, err := s.store.CreateColumn(ctx, c); err != nil {
-		http.Error(w, "failed to create column", http.StatusInternalServerError)
-		log.Printf("CreateColumn: %v", err)
+
+	if boards, err := json.Marshal(boards); err == nil {
+		w.Write(boards)
+	} else {
+		http.Error(w, "{\"err\": \"failed to marshal boards\"}", http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
 }
 
-func (s *Server) handleColumnEdit(w http.ResponseWriter, r *http.Request, boardID, colID int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
+// @Summary Get Board
+// @Description Fetch a board by its ID
+// @Tags Boards
+// @Accept json
+// @Produce json
+// @Param boardId path int true "Board ID"
+// @Success 200 {object} Board "Board details"
+// @Failure 400 {object} map[string]string "Invalid board ID"
+// @Failure 404 {object} map[string]string "Board not found"
+// @Failure 500 {object} map[string]string "Failed to encode response"
+// @Router /api/v2/board/{boardId} [get]
+func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	// Extract board ID from URL parameters
+	boardIDStr := chi.URLParam(r, "boardId")
+	if boardIDStr == "" {
+		http.Error(w, `{"error": "missing board ID"}`, http.StatusBadRequest)
 		return
 	}
-	name := r.FormValue("name")
-	ctx := r.Context()
-	col, err := s.store.GetColumnByID(ctx, colID)
+
+	boardID, err := strconv.Atoi(boardIDStr)
 	if err != nil {
-		http.Error(w, "column not found", http.StatusNotFound)
-		log.Printf("GetColumnByID %d: %v", colID, err)
+		http.Error(w, `{"error": "invalid board ID"}`, http.StatusBadRequest)
 		return
 	}
-	col.Name = name
-	if err := s.store.UpdateColumn(ctx, col); err != nil {
-		http.Error(w, "failed to update column", http.StatusInternalServerError)
-		log.Printf("UpdateColumn %d: %v", colID, err)
-		return
-	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
-}
 
-func (s *Server) handleColumnMove(w http.ResponseWriter, r *http.Request, boardID, colID int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
-		return
-	}
-	dir := r.FormValue("direction")
-	ctx := r.Context()
-	cols, err := s.store.GetColumnsByBoardID(ctx, boardID)
+	// Fetch the board from the database
+	board, err := s.store.GetBoardByID(r.Context(), boardID)
 	if err != nil {
-		http.Error(w, "failed to load columns", http.StatusInternalServerError)
-		log.Printf("GetColumnsByBoardID %d: %v", boardID, err)
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
-	idx := -1
-	for i := range cols {
-		if cols[i].ID == colID {
-			idx = i
-			break
-		}
-	}
-	if idx == -1 {
-		http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
+
+	// Respond with the board data
+	if err := json.NewEncoder(w).Encode(board); err != nil {
+		http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
 		return
 	}
-	// swapping positions
-	if dir == "left" && idx > 0 {
-		a := cols[idx]
-		b := cols[idx-1]
-		a.Position, b.Position = b.Position, a.Position
-		if err := s.store.UpdateColumn(ctx, a); err != nil {
-			http.Error(w, "failed to move column", http.StatusInternalServerError)
-			log.Printf("UpdateColumn %d: %v", a.ID, err)
-			return
-		}
-		if err := s.store.UpdateColumn(ctx, b); err != nil {
-			http.Error(w, "failed to move column", http.StatusInternalServerError)
-			log.Printf("UpdateColumn %d: %v", b.ID, err)
-			return
-		}
-	} else if dir == "right" && idx < len(cols)-1 {
-		a := cols[idx]
-		b := cols[idx+1]
-		a.Position, b.Position = b.Position, a.Position
-		if err := s.store.UpdateColumn(ctx, a); err != nil {
-			http.Error(w, "failed to move column", http.StatusInternalServerError)
-			log.Printf("UpdateColumn %d: %v", a.ID, err)
-			return
-		}
-		if err := s.store.UpdateColumn(ctx, b); err != nil {
-			http.Error(w, "failed to move column", http.StatusInternalServerError)
-			log.Printf("UpdateColumn %d: %v", b.ID, err)
-			return
-		}
-	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
 }
 
-func (s *Server) handleColumnDelete(w http.ResponseWriter, r *http.Request, boardID, colID int) {
-	ctx := r.Context()
-	if err := s.store.DeleteColumn(ctx, colID); err != nil {
-		http.Error(w, "failed to delete column", http.StatusInternalServerError)
-		log.Printf("DeleteColumn %d: %v", colID, err)
+// @Summary Update Board
+// @Description Update a board's details
+// @Tags Boards
+// @Accept json
+// @Produce json
+// @Param board body internal.Board true "Board object"
+// @Success 200 {object} map[string]string "Board updated successfully"
+// @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
+// @Failure 500 {object} map[string]string "Failed to update board"
+// @Router /api/v2/board/ [put]
+func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var board Board
+	if err := json.NewDecoder(r.Body).Decode(&board); err != nil {
+		http.Error(w, "{\"err\": \"invalid JSON body\"}", http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
+
+	if board.ID == 0 || board.Name == "" {
+		http.Error(w, "{\"err\": \"missing required fields: id, name\"}", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.UpdateBoard(r.Context(), board); err != nil {
+		http.Error(w, "{\"err\": \"failed to update board\"}", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("{\"msg\": \"board updated successfully\"}"))
 }
 
-func (s *Server) handleAddCardToColumn(w http.ResponseWriter, r *http.Request, boardID, colID int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
+// @Summary Create Board
+// @Description Create a new board
+// @Tags Boards
+// @Accept json
+// @Produce json
+// @Param input body internal.nameRequest true "Board object"
+// @Success 201 {object} Board "Created board"
+// @Failure 400 {object} map[string]string "Invalid input or missing name"
+// @Failure 500 {object} map[string]string "Failed to create board"
+// @Router /api/v2/board/ [post]
+func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var input nameRequest
+
+	// Decode the JSON body
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, `{"error": "invalid input"}`, http.StatusBadRequest)
 		return
 	}
-	title := r.FormValue("title")
-	desc := r.FormValue("description")
-	ctx := r.Context()
-	cards, err := s.store.GetCardsByColumnID(ctx, colID)
+
+	// Validate input
+	if input.Name == "" {
+		http.Error(w, `{"error": "name is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Create the board
+	board, err := s.store.CreateBoard(r.Context(), input.Name)
 	if err != nil {
-		http.Error(w, "failed to load cards", http.StatusInternalServerError)
-		log.Printf("GetCardsByColumnID %d: %v", colID, err)
+		http.Error(w, `{"error": "failed to create board"}`, http.StatusInternalServerError)
 		return
 	}
-	pos := 1
-	if len(cards) > 0 {
-		pos = cards[len(cards)-1].Position + 1
+
+	// Respond with the created board
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(board); err != nil {
+		http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
 	}
-	card := Card{ColumnID: colID, Title: title, Description: desc, Position: pos}
-	if _, err := s.store.CreateCard(ctx, card); err != nil {
-		http.Error(w, "failed to create card", http.StatusInternalServerError)
-		log.Printf("CreateCard: %v", err)
+}
+
+// @Summary Delete Board
+// @Description Delete a board by its ID
+// @Tags Boards
+// @Accept json
+// @Produce json
+// @Param board body internal.idRequest true "Board id"
+// @Success 204 "Board deleted successfully"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 404 {object} map[string]string "Board not found"
+// @Failure 500 {object} map[string]string "Failed to delete board"
+// @Router /api/v2/board/ [delete]
+func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var req idRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", boardID), http.StatusSeeOther)
+
+	if err := s.store.DeleteBoard(r.Context(), req.ID); err != nil {
+		if err.Error() == "DeleteBoard: not found" {
+			http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
+		} else {
+			http.Error(w, `{"error": "failed to delete board"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

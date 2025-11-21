@@ -3,5 +3,4 @@ dist/
 
 coverage.*
 
-/backend/docs/
 /backend/server

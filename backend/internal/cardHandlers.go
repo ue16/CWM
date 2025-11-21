@@ -1,171 +1,178 @@
 package internal
 
 import (
-	"fmt"
-	"log"
+	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func (s *Server) handleCardEdit(w http.ResponseWriter, r *http.Request, id int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
-		return
-	}
-	title := r.FormValue("title")
-	desc := r.FormValue("description")
+// @Summary Get Cards
+// @Description Fetch all cards for a specific column
+// @Tags Cards
+// @Accept json
+// @Produce json
+// @Param columnId path int true "Column ID"
+// @Router /api/v2/card/{columnId} [get]
+func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	ctx := r.Context()
-	card, err := s.store.GetCardByID(ctx, id)
+	// Extract column ID from URL parameters
+	columnIDStr := chi.URLParam(r, "columnId")
+	if columnIDStr == "" {
+		http.Error(w, `{"error": "missing column ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	columnID, err := strconv.Atoi(columnIDStr)
 	if err != nil {
-		http.Error(w, "card not found", http.StatusNotFound)
-		log.Printf("GetCardByID %d: %v", id, err)
+		http.Error(w, `{"error": "invalid column ID, must be an integer"}`, http.StatusBadRequest)
 		return
 	}
-	card.Title = title
-	card.Description = desc
-	if err := s.store.UpdateCard(ctx, card); err != nil {
-		http.Error(w, "failed to update card", http.StatusInternalServerError)
-		log.Printf("UpdateCard %d: %v", id, err)
-		return
-	}
-	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
+
+	// Fetch cards for the specified column
+	cards, err := s.store.GetCardsByColumnID(r.Context(), columnID)
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Error(w, `{"error": "failed to fetch cards"}`, http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
+
+	// Respond with the cards data
+	if err := json.NewEncoder(w).Encode(cards); err != nil {
+		http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
+		return
+	}
 }
 
-func (s *Server) handleCardMove(w http.ResponseWriter, r *http.Request, id int) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form", http.StatusBadRequest)
-		return
+// @Summary Create Card
+// @Description Create a new card in a specific column
+// @Tags Cards
+// @Accept json
+// @Produce json
+// @Param card body object true "Card creation payload"
+// @Param card.column_id body int true "Column ID"
+// @Param card.title body string true "Card title"
+// @Param card.description body string false "Card description"
+// @Success 201 {object} Card
+// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 500 {object} map[string]string "Failed to create card"
+// @Router /api/v2/card/ [post]
+func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var input struct {
+		ColumnID    int    `json:"column_id"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
 	}
-	ctx := r.Context()
 
-	// If a target column is specified, move directly there.
-	if tgt := r.FormValue("target_column_id"); tgt != "" {
-		targetID, err := strconv.Atoi(tgt)
-		if err != nil {
-			http.Error(w, "invalid target column", http.StatusBadRequest)
-			return
-		}
-		// compute new position as end of target column
-		cards, err := s.store.GetCardsByColumnID(ctx, targetID)
-		if err != nil {
-			http.Error(w, "failed to load cards", http.StatusInternalServerError)
-			log.Printf("GetCardsByColumnID %d: %v", targetID, err)
-			return
-		}
-		pos := 1
-		if len(cards) > 0 {
-			pos = cards[len(cards)-1].Position + 1
-		}
-
-		card, err := s.store.GetCardByID(ctx, id)
-		if err != nil {
-			http.Error(w, "card not found", http.StatusNotFound)
-			log.Printf("GetCardByID %d: %v", id, err)
-			return
-		}
-		card.ColumnID = targetID
-		card.Position = pos
-		if err := s.store.UpdateCard(ctx, card); err != nil {
-			http.Error(w, "failed to move card", http.StatusInternalServerError)
-			log.Printf("UpdateCard %d: %v", id, err)
-			return
-		}
-		col, err := s.store.GetColumnByID(ctx, targetID)
-		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-			return
-		}
-		http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, `{"error": "invalid input"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Otherwise handle directional move (left/right)
-	dir := r.FormValue("direction")
-	card, err := s.store.GetCardByID(ctx, id)
+	// Validate input
+	if input.ColumnID == 0 || input.Title == "" {
+		http.Error(w, `{"error": "column_id and title are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Fetch existing cards to determine position
+	cards, err := s.store.GetCardsByColumnID(r.Context(), input.ColumnID)
 	if err != nil {
-		http.Error(w, "card not found", http.StatusNotFound)
-		log.Printf("GetCardByID %d: %v", id, err)
+		http.Error(w, `{"error": "failed to fetch cards"}`, http.StatusInternalServerError)
 		return
 	}
-	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
+
+	position := 1
+	if len(cards) > 0 {
+		position = cards[len(cards)-1].Position + 1
+	}
+
+	// Create the card
+	card := Card{
+		ColumnID:    input.ColumnID,
+		Title:       input.Title,
+		Description: input.Description,
+		Position:    position,
+	}
+
+	createdCard, err := s.store.CreateCard(r.Context(), card)
 	if err != nil {
-		http.Error(w, "failed to load column", http.StatusInternalServerError)
-		log.Printf("GetColumnByID %d: %v", card.ColumnID, err)
+		http.Error(w, `{"error": "failed to create card"}`, http.StatusInternalServerError)
 		return
 	}
-	cols, err := s.store.GetColumnsByBoardID(ctx, col.BoardID)
-	if err != nil {
-		http.Error(w, "failed to load columns", http.StatusInternalServerError)
-		log.Printf("GetColumnsByBoardID %d: %v", col.BoardID, err)
-		return
+
+	// Respond with the created card
+	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(createdCard); err != nil {
+		http.Error(w, `{"error": "failed to encode response"}`, http.StatusInternalServerError)
 	}
-	idx := -1
-	for i := range cols {
-		if cols[i].ID == col.ID {
-			idx = i
-			break
-		}
-	}
-	if idx == -1 {
-		http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
-		return
-	}
-	var destCol Column
-	if dir == "left" && idx > 0 {
-		destCol = cols[idx-1]
-	} else if dir == "right" && idx < len(cols)-1 {
-		destCol = cols[idx+1]
-	} else {
-		// nothing to do
-		http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
-		return
-	}
-	// append to end of dest column
-	destCards, err := s.store.GetCardsByColumnID(ctx, destCol.ID)
-	if err != nil {
-		http.Error(w, "failed to load cards", http.StatusInternalServerError)
-		log.Printf("GetCardsByColumnID %d: %v", destCol.ID, err)
-		return
-	}
-	pos := 1
-	if len(destCards) > 0 {
-		pos = destCards[len(destCards)-1].Position + 1
-	}
-	card.ColumnID = destCol.ID
-	card.Position = pos
-	if err := s.store.UpdateCard(ctx, card); err != nil {
-		http.Error(w, "failed to move card", http.StatusInternalServerError)
-		log.Printf("UpdateCard %d: %v", id, err)
-		return
-	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
 }
 
-func (s *Server) handleCardDelete(w http.ResponseWriter, r *http.Request, id int) {
-	ctx := r.Context()
-	// get card to discover board
-	card, err := s.store.GetCardByID(ctx, id)
-	if err != nil {
-		http.Error(w, "card not found", http.StatusNotFound)
-		log.Printf("GetCardByID %d: %v", id, err)
+// @Summary Update Card
+// @Description Update a card's details
+// @Tags Cards
+// @Accept json
+// @Produce json
+// @Param card body internal.Card true "Card object"
+// @Success 200 {object} map[string]string "Card updated successfully"
+// @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
+// @Failure 500 {object} map[string]string "Failed to update card"
+// @Router /api/v2/card/ [put]
+func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var card Card
+	if err := json.NewDecoder(r.Body).Decode(&card); err != nil {
+		http.Error(w, `{"error": "invalid JSON body"}`, http.StatusBadRequest)
 		return
 	}
-	col, err := s.store.GetColumnByID(ctx, card.ColumnID)
-	if err != nil {
-		http.Error(w, "failed to load column", http.StatusInternalServerError)
-		log.Printf("GetColumnByID %d: %v", card.ColumnID, err)
+
+	if card.ID == 0 || card.Title == "" || card.Description == "" {
+		http.Error(w, `{"error": "missing required fields: id, title, description"}`, http.StatusBadRequest)
 		return
 	}
-	if err := s.store.DeleteCard(ctx, id); err != nil {
-		http.Error(w, "failed to delete card", http.StatusInternalServerError)
-		log.Printf("DeleteCard %d: %v", id, err)
+
+	if err := s.store.UpdateCard(r.Context(), card); err != nil {
+		http.Error(w, `{"error": "failed to update card"}`, http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, fmt.Sprintf("/board/%d", col.BoardID), http.StatusSeeOther)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "card updated successfully"}`))
+}
+
+// @Summary Delete Card
+// @Description Delete a card by its ID
+// @Tags Cards
+// @Accept json
+// @Produce json
+// @Param card body internal.idRequest true "Card id"
+// @Success 204 "Card deleted successfully"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 404 {object} map[string]string "Card not found"
+// @Failure 500 {object} map[string]string "Failed to delete card"
+// @Router /api/v2/card/ [delete]
+func (s *Server) deleteCard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var req idRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.DeleteCard(r.Context(), req.ID); err != nil {
+		if err.Error() == "DeleteCard: not found" {
+			http.Error(w, `{"error": "card not found"}`, http.StatusNotFound)
+		} else {
+			http.Error(w, `{"error": "failed to delete card"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
