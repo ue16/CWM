@@ -38,7 +38,11 @@ func main() {
 	}
 	defer db.Close()
 
-	addr := ":80"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	addr := fmt.Sprintf(":%s", port)
 	handler := internal.PrepareServer(addr, db)
 
 	log.Printf("starting server on %s", addr)
