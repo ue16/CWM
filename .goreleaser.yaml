@@ -3,10 +3,7 @@ gitlab_urls:
   download: https://git.uni-due.de
 
 archives:
-  - files:
-      - "backend/templates/*"
-      - "backend/static/*"
-    formats: ["tar.gz"]
+  - formats: ["tar.gz"]
     format_overrides:
       - goos: windows
         formats: ["zip"]

@@ -15,8 +15,6 @@ FROM alpine:latest
 
 WORKDIR /app
 COPY --from=builder /server /app/server
-COPY static/* /app/static/
-COPY templates/* /app/templates/
 
 EXPOSE 80
 
