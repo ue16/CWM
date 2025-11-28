@@ -14,9 +14,16 @@ import (
 // @Accept json
 // @Produce json
 // @Param columnId path int true "Column ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Router /api/v2/card/{columnId} [get]
 func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	// Extract column ID from URL parameters
 	columnIDStr := chi.URLParam(r, "columnId")
@@ -28,6 +35,13 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 	columnID, err := strconv.Atoi(columnIDStr)
 	if err != nil {
 		http.Error(w, `{"error": "invalid column ID, must be an integer"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this column
+	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, columnID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -56,10 +70,17 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 // @Param card.description body string false "Card description"
 // @Success 201 {object} Card
 // @Failure 400 {object} map[string]string "Invalid input or missing required fields"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Failed to create card"
 // @Router /api/v2/card/ [post]
 func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var input struct {
 		ColumnID    int    `json:"column_id"`
@@ -75,6 +96,13 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 	// Validate input
 	if input.ColumnID == 0 || input.Title == "" {
 		http.Error(w, `{"error": "column_id and title are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this column
+	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, input.ColumnID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -119,10 +147,17 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 // @Param card body internal.Card true "Card object"
 // @Success 200 {object} map[string]string "Card updated successfully"
 // @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Failed to update card"
 // @Router /api/v2/card/ [put]
 func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var card Card
 	if err := json.NewDecoder(r.Body).Decode(&card); err != nil {
@@ -132,6 +167,13 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 
 	if card.ID == 0 || card.Title == "" || card.Description == "" {
 		http.Error(w, `{"error": "missing required fields: id, title, description"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this card
+	owns, err := isCardBelongsToBoardOwner(r.Context(), s.store, userID, card.ID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "card not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -152,16 +194,30 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 // @Param card body internal.idRequest true "Card id"
 // @Success 204 "Card deleted successfully"
 // @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Card not found"
 // @Failure 500 {object} map[string]string "Failed to delete card"
 // @Router /api/v2/card/ [delete]
 func (s *Server) deleteCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
 	var req idRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this card
+	owns, err := isCardBelongsToBoardOwner(r.Context(), s.store, userID, req.ID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "card not found"}`, http.StatusNotFound)
 		return
 	}
 

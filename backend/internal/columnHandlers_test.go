@@ -17,14 +17,19 @@ func TestGetColumns(t *testing.T) {
 		{ID: 1, Name: "Column 1", BoardID: 1},
 		{ID: 2, Name: "Column 2", BoardID: 1},
 	}
+	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
 			return columns, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
 		},
 	}
 	s := &Server{store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/column/1", nil)
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -44,8 +49,37 @@ func TestGetColumns(t *testing.T) {
 	}
 }
 
+func TestGetColumnsUnauthorized(t *testing.T) {
+	board := Board{ID: 1, Name: "Test Board", UserID: 2}
+	mock := &MockStore{
+		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
+			return []Column{}, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	req := httptest.NewRequest(http.MethodGet, "/column/1", nil)
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("boardId", "1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
+	rr := httptest.NewRecorder()
+	s.getColumns(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestCreateColumn(t *testing.T) {
 	column := Column{ID: 1, Name: "New Column", BoardID: 1, Position: 1}
+	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
 			return []Column{}, nil
@@ -53,11 +87,15 @@ func TestCreateColumn(t *testing.T) {
 		CreateColumnFunc: func(ctx context.Context, c Column) (Column, error) {
 			return column, nil
 		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
 	}
 	s := &Server{store: mock}
 
 	body := `{"board_id": 1, "name": "New Column"}`
 	req := httptest.NewRequest(http.MethodPost, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.createColumn(rr, req)
 
@@ -74,16 +112,54 @@ func TestCreateColumn(t *testing.T) {
 	}
 }
 
+func TestCreateColumnUnauthorized(t *testing.T) {
+	board := Board{ID: 1, Name: "Test Board", UserID: 2}
+	mock := &MockStore{
+		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
+			return []Column{}, nil
+		},
+		CreateColumnFunc: func(ctx context.Context, c Column) (Column, error) {
+			return Column{}, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"board_id": 1, "name": "New Column"}`
+	req := httptest.NewRequest(http.MethodPost, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	rr := httptest.NewRecorder()
+	s.createColumn(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestUpdateColumn(t *testing.T) {
+	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
+	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		UpdateColumnFunc: func(ctx context.Context, c Column) error {
 			return nil
+		},
+		GetColumnByIDFunc: func(ctx context.Context, id int) (Column, error) {
+			return column, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
 		},
 	}
 	s := &Server{store: mock}
 
 	body := `{"id": 1, "name": "Updated Column"}`
 	req := httptest.NewRequest(http.MethodPut, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.updateColumn(rr, req)
 
@@ -95,16 +171,55 @@ func TestUpdateColumn(t *testing.T) {
 	}
 }
 
+func TestUpdateColumnUnauthorized(t *testing.T) {
+	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
+	board := Board{ID: 1, Name: "Test Board", UserID: 2}
+	mock := &MockStore{
+		UpdateColumnFunc: func(ctx context.Context, c Column) error {
+			return nil
+		},
+		GetColumnByIDFunc: func(ctx context.Context, id int) (Column, error) {
+			return column, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"id": 1, "name": "Updated Column"}`
+	req := httptest.NewRequest(http.MethodPut, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	rr := httptest.NewRecorder()
+	s.updateColumn(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestDeleteColumn(t *testing.T) {
+	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
+	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		DeleteColumnFunc: func(ctx context.Context, id int) error {
 			return nil
+		},
+		GetColumnByIDFunc: func(ctx context.Context, id int) (Column, error) {
+			return column, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
 		},
 	}
 	s := &Server{store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.deleteColumn(rr, req)
 
@@ -113,5 +228,35 @@ func TestDeleteColumn(t *testing.T) {
 
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestDeleteColumnUnauthorized(t *testing.T) {
+	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
+	board := Board{ID: 1, Name: "Test Board", UserID: 2}
+	mock := &MockStore{
+		DeleteColumnFunc: func(ctx context.Context, id int) error {
+			return nil
+		},
+		GetColumnByIDFunc: func(ctx context.Context, id int) (Column, error) {
+			return column, nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"id": 1}`
+	req := httptest.NewRequest(http.MethodDelete, "/column/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	rr := httptest.NewRecorder()
+	s.deleteColumn(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 }

@@ -49,8 +49,28 @@ func TestListBoards(t *testing.T) {
 	}
 }
 
+func TestListBoardsMissingHeader(t *testing.T) {
+	mock := &MockStore{
+		ListBoardsFunc: func(ctx context.Context, userID int) ([]Board, error) {
+			return nil, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	req := httptest.NewRequest(http.MethodGet, "/boards", nil)
+	rr := httptest.NewRecorder()
+	s.listBoards(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", resp.StatusCode)
+	}
+}
+
 func TestGetBoard(t *testing.T) {
-	board := Board{ID: 1, Name: "Alpha"}
+	board := Board{ID: 1, Name: "Alpha", UserID: 1}
 	mock := &MockStore{
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
@@ -59,6 +79,7 @@ func TestGetBoard(t *testing.T) {
 	s := &Server{store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/board/1", nil)
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -75,6 +96,31 @@ func TestGetBoard(t *testing.T) {
 	str := strings.TrimSpace(string(body))
 	if expect, _ := json.Marshal(board); strings.TrimSpace(string(expect)) != str {
 		t.Fatalf("response body mismatch: %s. Expected: %s", str, strings.TrimSpace(string(expect)))
+	}
+}
+
+func TestGetBoardUnauthorized(t *testing.T) {
+	board := Board{ID: 1, Name: "Alpha", UserID: 2}
+	mock := &MockStore{
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	req := httptest.NewRequest(http.MethodGet, "/board/1", nil)
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("boardId", "1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
+	rr := httptest.NewRecorder()
+	s.getBoard(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 }
 
@@ -106,16 +152,42 @@ func TestCreateBoard(t *testing.T) {
 	}
 }
 
-func TestUpdateBoard(t *testing.T) {
+func TestCreateBoardMissingHeader(t *testing.T) {
 	mock := &MockStore{
-		UpdateBoardFunc: func(ctx context.Context, b Board) error {
-			return nil
+		CreateBoardFunc: func(ctx context.Context, name string, userID int) (Board, error) {
+			return Board{}, nil
 		},
 	}
 	s := &Server{store: mock}
 
-	body := `{"id": 1, "name": "Updated Board"}`
+	body := `{"name": "New Board"}`
+	req := httptest.NewRequest(http.MethodPost, "/board/", strings.NewReader(body))
+	rr := httptest.NewRecorder()
+	s.createBoard(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", resp.StatusCode)
+	}
+}
+
+func TestUpdateBoard(t *testing.T) {
+	board := Board{ID: 1, Name: "Updated Board", UserID: 1}
+	mock := &MockStore{
+		UpdateBoardFunc: func(ctx context.Context, b Board) error {
+			return nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"id": 1, "name": "Updated Board", "user_id": 1}`
 	req := httptest.NewRequest(http.MethodPut, "/board/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.updateBoard(rr, req)
 
@@ -127,16 +199,47 @@ func TestUpdateBoard(t *testing.T) {
 	}
 }
 
+func TestUpdateBoardUnauthorized(t *testing.T) {
+	board := Board{ID: 1, Name: "Updated Board", UserID: 2}
+	mock := &MockStore{
+		UpdateBoardFunc: func(ctx context.Context, b Board) error {
+			return nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"id": 1, "name": "Updated Board", "user_id": 2}`
+	req := httptest.NewRequest(http.MethodPut, "/board/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	rr := httptest.NewRecorder()
+	s.updateBoard(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
+	}
+}
+
 func TestDeleteBoard(t *testing.T) {
+	board := Board{ID: 1, Name: "Board to Delete", UserID: 1}
 	mock := &MockStore{
 		DeleteBoardFunc: func(ctx context.Context, id int) error {
 			return nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
 		},
 	}
 	s := &Server{store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/board/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.deleteBoard(rr, req)
 
@@ -145,5 +248,31 @@ func TestDeleteBoard(t *testing.T) {
 
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	}
+}
+
+func TestDeleteBoardUnauthorized(t *testing.T) {
+	board := Board{ID: 1, Name: "Board to Delete", UserID: 2}
+	mock := &MockStore{
+		DeleteBoardFunc: func(ctx context.Context, id int) error {
+			return nil
+		},
+		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
+			return board, nil
+		},
+	}
+	s := &Server{store: mock}
+
+	body := `{"id": 1}`
+	req := httptest.NewRequest(http.MethodDelete, "/board/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	rr := httptest.NewRecorder()
+	s.deleteBoard(rr, req)
+
+	resp := rr.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", resp.StatusCode)
 	}
 }

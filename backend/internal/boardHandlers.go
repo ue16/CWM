@@ -59,6 +59,12 @@ func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
 	// Extract board ID from URL parameters
 	boardIDStr := chi.URLParam(r, "boardId")
 	if boardIDStr == "" {
@@ -69,6 +75,13 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 	boardID, err := strconv.Atoi(boardIDStr)
 	if err != nil {
 		http.Error(w, `{"error": "invalid board ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns this board
+	owns, err := isBoardOwner(r.Context(), s.store, userID, boardID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -91,6 +104,7 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 // @Tags Boards
 // @Accept json
 // @Produce json
+// @Param User-ID header string true "User ID"
 // @Param board body internal.Board true "Board object"
 // @Success 200 {object} map[string]string "Board updated successfully"
 // @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
@@ -99,24 +113,37 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
 	var board Board
 	if err := json.NewDecoder(r.Body).Decode(&board); err != nil {
-		http.Error(w, "{\"err\": \"invalid JSON body\"}", http.StatusBadRequest)
+		http.Error(w, `{"error": "invalid JSON body"}`, http.StatusBadRequest)
 		return
 	}
 
 	if board.ID == 0 || board.Name == "" {
-		http.Error(w, "{\"err\": \"missing required fields: id, name\"}", http.StatusBadRequest)
+		http.Error(w, `{"error": "missing required fields: id, name"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns this board
+	owns, err := isBoardOwner(r.Context(), s.store, userID, board.ID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
 
 	if err := s.store.UpdateBoard(r.Context(), board); err != nil {
-		http.Error(w, "{\"err\": \"failed to update board\"}", http.StatusInternalServerError)
+		http.Error(w, `{"error": "failed to update board"}`, http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("{\"msg\": \"board updated successfully\"}"))
+	w.Write([]byte(`{"message": "board updated successfully"}`))
 }
 
 // @Summary Create Board
@@ -181,10 +208,23 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
 	var req idRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns this board
+	owns, err := isBoardOwner(r.Context(), s.store, userID, req.ID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
 

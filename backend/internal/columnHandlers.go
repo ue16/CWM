@@ -16,10 +16,17 @@ import (
 // @Param boardId path int true "Board ID"
 // @Success 200 {array} Column
 // @Failure 400 {object} map[string]string "Invalid board ID"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Failed to fetch columns"
 // @Router /api/v2/column/{boardId} [get]
 func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	// Extract board ID from URL parameters
 	boardIDStr := chi.URLParam(r, "boardId")
@@ -31,6 +38,13 @@ func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 	boardID, err := strconv.Atoi(boardIDStr)
 	if err != nil {
 		http.Error(w, `{"error": "invalid board ID, must be an integer"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns this board
+	owns, err := isBoardOwner(r.Context(), s.store, userID, boardID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -58,10 +72,17 @@ func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 // @Param input.name body string true "Column name"
 // @Success 201 {object} Column
 // @Failure 400 {object} map[string]string "Invalid input or missing fields"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Failed to create column"
 // @Router /api/v2/column/ [post]
 func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var input struct {
 		BoardID int    `json:"board_id"`
@@ -77,6 +98,13 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 	// Validate input
 	if input.BoardID == 0 || input.Name == "" {
 		http.Error(w, `{"error": "board_id and name are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns this board
+	owns, err := isBoardOwner(r.Context(), s.store, userID, input.BoardID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
 
@@ -120,10 +148,17 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 // @Param input body internal.Column true "Column object"
 // @Success 200 {object} map[string]string "Column updated successfully"
 // @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 500 {object} map[string]string "Failed to update column"
 // @Router /api/v2/column/ [put]
 func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, "{\"error\": \"unauthorized\"}", http.StatusUnauthorized)
+		return
+	}
 
 	var column Column
 	if err := json.NewDecoder(r.Body).Decode(&column); err != nil {
@@ -133,6 +168,13 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 
 	if column.ID == 0 || column.Name == "" {
 		http.Error(w, "{\"error\": \"missing required fields: id, name\"}", http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this column
+	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, column.ID)
+	if err != nil || !owns {
+		http.Error(w, "{\"error\": \"column not found\"}", http.StatusNotFound)
 		return
 	}
 
@@ -153,16 +195,30 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 // @Param input body internal.idRequest true "Column ID"
 // @Success 204 "Column deleted successfully"
 // @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "Column not found"
 // @Failure 500 {object} map[string]string "Failed to delete column"
 // @Router /api/v2/column/ [delete]
 func (s *Server) deleteColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
 	var req idRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Check if user owns the board that contains this column
+	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, req.ID)
+	if err != nil || !owns {
+		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return
 	}
 

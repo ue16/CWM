@@ -283,6 +283,11 @@ paths:
       - application/json
       description: Update a board's details
       parameters:
+      - description: User ID
+        in: header
+        name: User-ID
+        required: true
+        type: string
       - description: Board object
         in: body
         name: board
@@ -410,6 +415,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: Card not found
           schema:
@@ -466,6 +477,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to create card
           schema:
@@ -501,6 +518,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to update card
           schema:
@@ -523,7 +546,13 @@ paths:
         type: integer
       produces:
       - application/json
-      responses: {}
+      responses:
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Get Cards
       tags:
       - Cards
@@ -546,6 +575,12 @@ paths:
           description: Column deleted successfully
         "400":
           description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
@@ -601,6 +636,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to create column
           schema:
@@ -636,6 +677,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to update column
           schema:
@@ -667,6 +714,12 @@ paths:
             type: array
         "400":
           description: Invalid board ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string
