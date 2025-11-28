@@ -4,28 +4,51 @@ import "context"
 
 // MockStore provides function fields to allow tests to configure behavior.
 type MockStore struct {
-	ListBoardsFunc          func(ctx context.Context) ([]Board, error)
-	CreateBoardFunc         func(ctx context.Context, name string) (Board, error)
+	// User operations
+	CreateUserFunc        func(ctx context.Context, username, email, passwordHash string) (User, error)
+	GetUserByUsernameFunc func(ctx context.Context, username string) (User, error)
+	GetUserByIDFunc       func(ctx context.Context, id int) (User, error)
+	UserExistsFunc        func(ctx context.Context, username string) (bool, error)
+
+	// Board operations
+	ListBoardsFunc          func(ctx context.Context, userID int) ([]Board, error)
+	CreateBoardFunc         func(ctx context.Context, name string, userID int) (Board, error)
 	GetBoardByIDFunc        func(ctx context.Context, id int) (Board, error)
 	UpdateBoardFunc         func(ctx context.Context, b Board) error
 	GetColumnsByBoardIDFunc func(ctx context.Context, boardID int) ([]Column, error)
 	GetCardsByColumnIDFunc  func(ctx context.Context, columnID int) ([]Card, error)
-	GetColumnByIDFunc       func(ctx context.Context, id int) (Column, error)
-	GetCardByIDFunc         func(ctx context.Context, id int) (Card, error)
-	UpdateCardFunc          func(ctx context.Context, c Card) error
-	CreateColumnFunc        func(ctx context.Context, c Column) (Column, error)
-	UpdateColumnFunc        func(ctx context.Context, c Column) error
-	DeleteColumnFunc        func(ctx context.Context, id int) error
-	CreateCardFunc          func(ctx context.Context, c Card) (Card, error)
-	DeleteCardFunc          func(ctx context.Context, id int) error
 	DeleteBoardFunc         func(ctx context.Context, id int) error
+
+	// Column operations
+	GetColumnByIDFunc func(ctx context.Context, id int) (Column, error)
+	CreateColumnFunc  func(ctx context.Context, c Column) (Column, error)
+	UpdateColumnFunc  func(ctx context.Context, c Column) error
+	DeleteColumnFunc  func(ctx context.Context, id int) error
+
+	// Card operations
+	GetCardByIDFunc func(ctx context.Context, id int) (Card, error)
+	CreateCardFunc  func(ctx context.Context, c Card) (Card, error)
+	UpdateCardFunc  func(ctx context.Context, c Card) error
+	DeleteCardFunc  func(ctx context.Context, id int) error
 }
 
-func (m *MockStore) ListBoards(ctx context.Context) ([]Board, error) {
-	return m.ListBoardsFunc(ctx)
+func (m *MockStore) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
+	return m.CreateUserFunc(ctx, username, email, passwordHash)
 }
-func (m *MockStore) CreateBoard(ctx context.Context, name string) (Board, error) {
-	return m.CreateBoardFunc(ctx, name)
+func (m *MockStore) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	return m.GetUserByUsernameFunc(ctx, username)
+}
+func (m *MockStore) GetUserByID(ctx context.Context, id int) (User, error) {
+	return m.GetUserByIDFunc(ctx, id)
+}
+func (m *MockStore) UserExists(ctx context.Context, username string) (bool, error) {
+	return m.UserExistsFunc(ctx, username)
+}
+func (m *MockStore) ListBoards(ctx context.Context, userID int) ([]Board, error) {
+	return m.ListBoardsFunc(ctx, userID)
+}
+func (m *MockStore) CreateBoard(ctx context.Context, name string, userID int) (Board, error) {
+	return m.CreateBoardFunc(ctx, name, userID)
 }
 func (m *MockStore) UpdateBoard(ctx context.Context, b Board) error {
 	return m.UpdateBoardFunc(ctx, b)

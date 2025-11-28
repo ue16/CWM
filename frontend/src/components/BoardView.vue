@@ -1,26 +1,36 @@
 <template>
-	<div>
-		<router-link to="/">&larr; Back to boards</router-link>
-		<div v-if="loading" class="loading">Loading board...</div>
-		<div v-if="error" class="error">Error: {{ error }}</div>
-		<h1 v-if="board">{{ board.name }}</h1>
-		<form v-if="board" class="add-column-form" @submit.prevent="addColumn">
-			<input v-model="newColumnName" placeholder="New column name" required />
-			<button type="submit">Add column</button>
-		</form>
-		<div v-if="columns && columns.length" class="board">
-			<Column
-				v-for="column in columns"
-				:key="column.id"
-				:column="column"
-				:all-columns="columns"
-				@delete-column="deleteColumn"
-				@add-card="addCard"
-				@delete-card="deleteCard"
-				style="flex: 1; margin: 0 8px"
-			/>
+	<div class="board-view-page">
+		<div class="board-view-header">
+			<div class="board-view-header-content">
+				<router-link to="/" class="board-back-link">&larr; Back to boards</router-link>
+				<h1 v-if="board">{{ board.name }}</h1>
+			</div>
 		</div>
-		<div v-else class="board">No columns yet. Create one!</div>
+
+		<div class="board-view-container">
+			<div v-if="loading" class="board-loading">Loading board...</div>
+			<div v-if="error" class="board-error">Error: {{ error }}</div>
+
+			<div v-if="!loading && board" class="board-content">
+				<form v-if="board" class="add-column-form" @submit.prevent="addColumn">
+					<input v-model="newColumnName" placeholder="New column name" required />
+					<button type="submit">Add column</button>
+				</form>
+
+				<div v-if="columns && columns.length" class="board">
+					<Column
+						v-for="column in columns"
+						:key="column.id"
+						:column="column"
+						:all-columns="columns"
+						@delete-column="deleteColumn"
+						@add-card="addCard"
+						@delete-card="deleteCard"
+					/>
+				</div>
+				<div v-else class="no-columns">No columns yet. Create one!</div>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -84,7 +94,20 @@ export default {
 				}
 			} catch (err) {
 				console.error('Error loading board:', err)
-				this.error = err.message
+				// Handle 404 error - board not found (user doesn't own it)
+				if (err.response?.status === 404) {
+					this.error = 'Board not found. You may not have access to this board.'
+					setTimeout(() => {
+						this.$router.push('/boards')
+					}, 2000)
+				} else if (err.response?.status === 401) {
+					this.error = 'Unauthorized. Please log in again.'
+					setTimeout(() => {
+						this.$router.push('/login')
+					}, 2000)
+				} else {
+					this.error = err.message || 'Failed to load board'
+				}
 			} finally {
 				this.loading = false
 			}
@@ -98,26 +121,5 @@ export default {
 </script>
 
 <style scoped>
-.board {
-	display: flex;
-	flex-direction: row;
-	gap: 16px;
-	padding: 16px;
-	overflow-x: auto;
-}
-.add-column-form {
-	flex-direction: row;
-}
-.loading {
-	padding: 16px;
-	color: #666;
-	font-size: 16px;
-}
-.error {
-	padding: 16px;
-	color: #d32f2f;
-	background-color: #ffebee;
-	border-radius: 4px;
-	margin: 8px;
-}
+/* All styles are defined in global styles.css */
 </style>

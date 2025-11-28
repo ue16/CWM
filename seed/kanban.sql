@@ -4,11 +4,22 @@
 DROP TABLE IF EXISTS cards;
 DROP TABLE IF EXISTS columns;
 DROP TABLE IF EXISTS boards;
+DROP TABLE IF EXISTS users;
+
+-- Create Users table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    username TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create Boards table
 CREATE TABLE boards (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create Columns table
@@ -28,8 +39,11 @@ CREATE TABLE cards (
     position INTEGER NOT NULL
 );
 
+-- Insert sample user (password: password123)
+INSERT INTO users (email, password_hash, username) VALUES ('user@example.com', '$2y$10$HovCNynh1dKtG3puJqbPWedlwlfuf8hpA0.Kw9skCBySohfGuuAoq', 'testuser');
+
 -- Insert sample board
-INSERT INTO boards (name) VALUES ('Project Alpha');
+INSERT INTO boards (name, user_id) VALUES ('Project Alpha', 1);
 
 -- Insert sample columns for the board
 INSERT INTO columns (board_id, name, position) VALUES (1, 'To Do', 1);

@@ -1,11 +1,24 @@
 basePath: /
 definitions:
+  internal.AuthResponse:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/internal.User'
+    type: object
   internal.Board:
     properties:
       id:
         type: integer
       name:
         type: string
+      user_id:
+        type: integer
     type: object
   internal.Card:
     properties:
@@ -31,6 +44,40 @@ definitions:
       position:
         type: integer
     type: object
+  internal.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/internal.User'
+    type: object
+  internal.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  internal.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
   internal.idRequest:
     properties:
       id:
@@ -54,6 +101,107 @@ info:
   title: CWM Kanban
   version: "0.2"
 paths:
+  /api/v2/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with username and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: loginReq
+        required: true
+        schema:
+          $ref: '#/definitions/internal.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/internal.LoginResponse'
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /api/v2/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Registration details
+        in: body
+        name: registerReq
+        required: true
+        schema:
+          $ref: '#/definitions/internal.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/internal.AuthResponse'
+        "400":
+          description: Invalid request or user exists
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+  /api/v2/auth/verify:
+    get:
+      consumes:
+      - application/json
+      description: Verify if the provided token is valid
+      parameters:
+      - description: Auth token
+        in: header
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token is valid
+          schema:
+            $ref: '#/definitions/internal.User'
+        "401":
+          description: Invalid token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify authentication token
+      tags:
+      - auth
   /api/v2/board/:
     delete:
       consumes:
@@ -95,9 +243,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new board
+      description: Create a new board for the authenticated user
       parameters:
-      - description: Board object
+      - description: User ID
+        in: header
+        name: User-ID
+        required: true
+        type: string
+      - description: Board creation request
         in: body
         name: input
         required: true
@@ -203,7 +356,13 @@ paths:
     get:
       consumes:
       - application/json
-      description: Lists all existing boards.
+      description: Lists all boards belonging to the authenticated user.
+      parameters:
+      - description: User ID
+        in: header
+        name: User-ID
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -213,13 +372,19 @@ paths:
             items:
               $ref: '#/definitions/internal.Board'
             type: array
+        "400":
+          description: Invalid or missing user ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Failed to list boards
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: List all boards
+      summary: List all boards for a user
       tags:
       - All-Boards
   /api/v2/card/:

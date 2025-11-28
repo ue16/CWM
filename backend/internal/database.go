@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -41,29 +42,92 @@ func (db *DB) Close() {
 }
 
 //
+// Users
+//
+
+// CreateUser inserts a new user and returns it with the assigned ID.
+func (db *DB) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
+	var id int
+	var createdAt time.Time
+	err := db.pool.QueryRow(ctx,
+		`INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, created_at`,
+		username, email, passwordHash,
+	).Scan(&id, &createdAt)
+	if err != nil {
+		return User{}, fmt.Errorf("CreateUser: %w", err)
+	}
+	return User{ID: id, Username: username, Email: email, PasswordHash: passwordHash, CreatedAt: createdAt}, nil
+}
+
+// GetUserByUsername retrieves a user by username.
+func (db *DB) GetUserByUsername(ctx context.Context, username string) (User, error) {
+	var u User
+	err := db.pool.QueryRow(ctx,
+		`SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1`,
+		username,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return User{}, fmt.Errorf("GetUserByUsername: not found")
+		}
+		return User{}, fmt.Errorf("GetUserByUsername: %w", err)
+	}
+	return u, nil
+}
+
+// GetUserByID retrieves a user by id.
+func (db *DB) GetUserByID(ctx context.Context, id int) (User, error) {
+	var u User
+	err := db.pool.QueryRow(ctx,
+		`SELECT id, username, email, password_hash, created_at FROM users WHERE id = $1`,
+		id,
+	).Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return User{}, fmt.Errorf("GetUserByID: not found")
+		}
+		return User{}, fmt.Errorf("GetUserByID: %w", err)
+	}
+	return u, nil
+}
+
+// UserExists checks if a user with the given username exists.
+func (db *DB) UserExists(ctx context.Context, username string) (bool, error) {
+	var count int
+	err := db.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM users WHERE username = $1`,
+		username,
+	).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("UserExists: %w", err)
+	}
+	return count > 0, nil
+}
+
+//
 // Boards
 //
 
 // CreateBoard inserts a new board and returns it with the assigned ID.
-func (db *DB) CreateBoard(ctx context.Context, name string) (Board, error) {
+func (db *DB) CreateBoard(ctx context.Context, name string, userID int) (Board, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
-		`INSERT INTO boards (name) VALUES ($1) RETURNING id`,
-		name,
+		`INSERT INTO boards (name, user_id) VALUES ($1, $2) RETURNING id`,
+		name, userID,
 	).Scan(&id)
 	if err != nil {
 		return Board{}, fmt.Errorf("CreateBoard: %w", err)
 	}
-	return Board{ID: id, Name: name}, nil
+	return Board{ID: id, Name: name, UserID: userID}, nil
 }
 
 // GetBoardByID retrieves a board by id.
 func (db *DB) GetBoardByID(ctx context.Context, id int) (Board, error) {
 	var b Board
 	err := db.pool.QueryRow(ctx,
-		`SELECT id, name FROM boards WHERE id = $1`,
+		`SELECT id, name, user_id FROM boards WHERE id = $1`,
 		id,
-	).Scan(&b.ID, &b.Name)
+	).Scan(&b.ID, &b.Name, &b.UserID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return Board{}, fmt.Errorf("GetBoardByID: not found")
@@ -73,9 +137,9 @@ func (db *DB) GetBoardByID(ctx context.Context, id int) (Board, error) {
 	return b, nil
 }
 
-// ListBoards returns all boards.
-func (db *DB) ListBoards(ctx context.Context) ([]Board, error) {
-	rows, err := db.pool.Query(ctx, `SELECT id, name FROM boards ORDER BY id`)
+// ListBoards returns all boards for a user.
+func (db *DB) ListBoards(ctx context.Context, userID int) ([]Board, error) {
+	rows, err := db.pool.Query(ctx, `SELECT id, name, user_id FROM boards WHERE user_id = $1 ORDER BY id`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ListBoards: %w", err)
 	}
@@ -84,7 +148,7 @@ func (db *DB) ListBoards(ctx context.Context) ([]Board, error) {
 	var boards []Board
 	for rows.Next() {
 		var b Board
-		if err := rows.Scan(&b.ID, &b.Name); err != nil {
+		if err := rows.Scan(&b.ID, &b.Name, &b.UserID); err != nil {
 			return nil, fmt.Errorf("ListBoards scan: %w", err)
 		}
 		boards = append(boards, b)

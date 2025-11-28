@@ -41,9 +41,13 @@ func PrepareServer(addr string, store Store) http.Handler {
 
 	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
 	r.Route("/api/v2", func(r chi.Router) {
-		r.Get("/boards", s.listBoards)
+		// Public auth routes
+		r.Post("/auth/login", s.login)
+		r.Post("/auth/register", s.register)
+		r.Get("/auth/verify", s.verify)
 
-		// Board actions
+		// Protected routes - boards
+		r.Get("/boards", s.listBoards)
 		r.Get("/board/{boardId}", s.getBoard)
 		r.Post("/board/", s.createBoard)
 		r.Put("/board/", s.updateBoard)

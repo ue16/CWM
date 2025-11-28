@@ -8,27 +8,39 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// @Summary List all boards
-// @Description Lists all existing boards.
+// @Summary List all boards for a user
+// @Description Lists all boards belonging to the authenticated user.
 // @Tags All-Boards
 // @Accept json
 // @Produce json
+// @Param User-ID header string true "User ID"
 // @Success 200 {array} internal.Board "List of boards"
+// @Failure 400 {object} map[string]string "Invalid or missing user ID"
 // @Failure 500 {object} map[string]string "Failed to list boards"
 // @Router /api/v2/boards [get]
 func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	boards, err := s.store.ListBoards(r.Context())
+	userID, err := getUserIDFromAuthToken(r)
 	if err != nil {
-		http.Error(w, "{\"err\": \"failed to list boards\"", http.StatusInternalServerError)
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
 
-	if boards, err := json.Marshal(boards); err == nil {
-		w.Write(boards)
+	boards, err := s.store.ListBoards(r.Context(), userID)
+	if err != nil {
+		http.Error(w, `{"error": "failed to list boards"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if boards == nil {
+		boards = []Board{}
+	}
+
+	if boardsJSON, err := json.Marshal(boards); err == nil {
+		w.Write(boardsJSON)
 	} else {
-		http.Error(w, "{\"err\": \"failed to marshal boards\"}", http.StatusInternalServerError)
+		http.Error(w, `{"error": "failed to marshal boards"}`, http.StatusInternalServerError)
 		return
 	}
 }
@@ -108,17 +120,24 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Create Board
-// @Description Create a new board
+// @Description Create a new board for the authenticated user
 // @Tags Boards
 // @Accept json
 // @Produce json
-// @Param input body internal.nameRequest true "Board object"
+// @Param User-ID header string true "User ID"
+// @Param input body internal.nameRequest true "Board creation request"
 // @Success 201 {object} Board "Created board"
 // @Failure 400 {object} map[string]string "Invalid input or missing name"
 // @Failure 500 {object} map[string]string "Failed to create board"
 // @Router /api/v2/board/ [post]
 func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	userID, err := getUserIDFromAuthToken(r)
+	if err != nil {
+		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var input nameRequest
 
@@ -135,7 +154,7 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create the board
-	board, err := s.store.CreateBoard(r.Context(), input.Name)
+	board, err := s.store.CreateBoard(r.Context(), input.Name, userID)
 	if err != nil {
 		http.Error(w, `{"error": "failed to create board"}`, http.StatusInternalServerError)
 		return

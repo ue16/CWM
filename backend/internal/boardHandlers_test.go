@@ -3,28 +3,36 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
+// Helper to create a valid token for testing
+func createTestToken(userID int) string {
+	return fmt.Sprintf("%d:%d", userID, time.Now().Add(24*time.Hour).Unix())
+}
+
 func TestListBoards(t *testing.T) {
 	b := []Board{
-		{ID: 1, Name: "Alpha"},
-		{ID: 2, Name: "Beta"},
+		{ID: 1, Name: "Alpha", UserID: 1},
+		{ID: 2, Name: "Beta", UserID: 1},
 	}
 	mock := &MockStore{
-		ListBoardsFunc: func(ctx context.Context) ([]Board, error) {
+		ListBoardsFunc: func(ctx context.Context, userID int) ([]Board, error) {
 			return b, nil
 		},
 	}
 	s := &Server{store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/boards", nil)
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.listBoards(rr, req)
 
@@ -71,9 +79,9 @@ func TestGetBoard(t *testing.T) {
 }
 
 func TestCreateBoard(t *testing.T) {
-	board := Board{ID: 1, Name: "New Board"}
+	board := Board{ID: 1, Name: "New Board", UserID: 1}
 	mock := &MockStore{
-		CreateBoardFunc: func(ctx context.Context, name string) (Board, error) {
+		CreateBoardFunc: func(ctx context.Context, name string, userID int) (Board, error) {
 			return board, nil
 		},
 	}
@@ -81,6 +89,7 @@ func TestCreateBoard(t *testing.T) {
 
 	body := `{"name": "New Board"}`
 	req := httptest.NewRequest(http.MethodPost, "/board/", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
 	rr := httptest.NewRecorder()
 	s.createBoard(rr, req)
 
