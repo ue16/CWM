@@ -32,17 +32,18 @@ func main() {
 	}
 
 	// Set up the DB connection. If it is not up yet, wait up to 15s and retry.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 	var db *internal.DB
 	var err error
 	var wait time.Duration
 	maxAttempts := 5
 	for attempt := range maxAttempts {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		db, err = internal.NewDB(ctx, connString)
 		if err == nil {
+			defer cancel()
 			break
 		}
+		cancel()
 
 		wait = time.Second * time.Duration(attempt+1)
 		log.Printf("failed to connect to db (attempt %d/%d): %v; retrying in %s", attempt, maxAttempts, err, wait)
