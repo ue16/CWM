@@ -1,0 +1,7 @@
+
+:80 {
+	try_files {path} /
+	file_server {
+		root /frontend
+	}
+}
