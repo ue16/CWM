@@ -22,3 +22,13 @@ export const createColumn = async (boardId: number, name: string): Promise<Colum
 export const deleteColumn = async (id: number): Promise<void> => {
 	await client.delete(`${API_BASE}/column/`, { data: { id } })
 }
+
+export const moveColumn = async (column: Column, newPosition: number): Promise<Column> => {
+	const response = await client.put(`${API_BASE}/column/`, {
+		id: column.id,
+		name: column.name,
+		board_id: column.board_id,
+		position: newPosition,
+	})
+	return response.data
+}

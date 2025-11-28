@@ -26,6 +26,8 @@
 						@delete-column="deleteColumn"
 						@add-card="addCard"
 						@delete-card="deleteCard"
+						@move-card="moveCard"
+						@move-column="moveColumn"
 					/>
 				</div>
 				<div v-else class="no-columns">No columns yet. Create one!</div>
@@ -36,14 +38,14 @@
 
 <script>
 import Column from './Column.vue'
-import { VueDraggable } from 'vue-draggable-plus'
 import { fetchBoard } from '@/api/boards'
 import { fetchColumns, createColumn, deleteColumn } from '@/api/columns'
-import { fetchCards, createCard, deleteCard } from '@/api/cards'
+import { fetchCards, createCard, deleteCard, moveCard as moveCardAPI } from '@/api/cards'
+import { moveColumn as moveColumnAPI } from '@/api/columns'
 
 export default {
 	name: 'BoardView',
-	components: { Column, VueDraggable },
+	components: { Column },
 	data() {
 		return {
 			board: null,
@@ -75,6 +77,88 @@ export default {
 				if (column.cards) {
 					column.cards = column.cards.filter((card) => card.id !== cardId)
 				}
+			}
+		},
+		async moveCard(moveData) {
+			try {
+				const { card, fromColumnId, toColumnId } = moveData
+
+				// If moving within the same column, do nothing
+				if (fromColumnId === toColumnId) {
+					return
+				}
+
+				// Remove card from source column
+				const fromColumn = this.columns.find((c) => c.id === fromColumnId)
+				if (fromColumn && fromColumn.cards) {
+					fromColumn.cards = fromColumn.cards.filter((c) => c.id !== card.id)
+				}
+
+				// Add card to target column
+				const toColumn = this.columns.find((c) => c.id === toColumnId)
+				if (toColumn) {
+					if (!toColumn.cards) {
+						toColumn.cards = []
+					}
+					toColumn.cards.push(card)
+				}
+
+				// Call API to move the card
+				await moveCardAPI(card, toColumnId)
+			} catch (err) {
+				console.error('Error moving card:', err)
+				this.error = 'Failed to move card'
+				// Reload board data to ensure consistency
+				setTimeout(() => {
+					this.loadBoardData()
+				}, 1000)
+			}
+		},
+		async moveColumn(moveData) {
+			try {
+				const { columnId, targetColumnId } = moveData
+
+				// Find the column being moved and the target column
+				const fromIndex = this.columns.findIndex((c) => c.id === columnId)
+				const toIndex = this.columns.findIndex((c) => c.id === targetColumnId)
+
+				if (fromIndex === -1 || toIndex === -1) return
+
+				// If moving to the same position, do nothing
+				if (fromIndex === toIndex) {
+					return
+				}
+
+				// Move the column in the array
+				const [movedColumn] = this.columns.splice(fromIndex, 1)
+				this.columns.splice(toIndex, 0, movedColumn)
+
+				// Update positions for all columns
+				const positionUpdates = this.columns.map((col, index) => ({
+					id: col.id,
+					name: col.name,
+					board_id: col.board_id,
+					position: index + 1,
+				}))
+
+				// Call API to update positions for all affected columns
+				const movedCol = positionUpdates.find((c) => c.id === columnId)
+				if (movedCol) {
+					await moveColumnAPI(movedCol, movedCol.position)
+				}
+
+				// Update local columns with new positions
+				this.columns = this.columns.map((col) => {
+					const updated = positionUpdates.find((c) => c.id === col.id)
+					return { ...col, position: updated?.position || col.position }
+				})
+			} catch (err) {
+				console.error('Error moving column:', err)
+				this.error = 'Failed to move column'
+				// Reload board data to ensure consistency
+				setTimeout(() => {
+					this.loadBoardData()
+				}, 1000)
 			}
 		},
 		async loadBoardData() {
