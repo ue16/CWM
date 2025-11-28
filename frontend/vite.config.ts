@@ -12,4 +12,10 @@ export default defineConfig({
 			'@': fileURLToPath(new URL('./src', import.meta.url)),
 		},
 	},
+	server: {
+		middlewareMode: false,
+	},
+	define: {
+		'import.meta.env.BACKEND_BASE_URL': JSON.stringify(process.env.VITE_BACKEND_BASE_URL || ''),
+	},
 })

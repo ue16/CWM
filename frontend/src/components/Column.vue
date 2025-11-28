@@ -4,12 +4,15 @@
 			<span class="column-name">{{ column.name }}</span>
 			<button class="delete-button" @click="$emit('delete-column', column.id)">Delete</button>
 		</div>
-		<VueDraggable v-model="column.cards" group="cards" item-key="id" :animation="200">
-			<template v-for="card in column.cards">
-				<Card :card="card" @delete-card="$emit('delete-card', card.id)" />
-			</template>
-		</VueDraggable>
-		<div v-if="!column.cards.length">No cards</div>
+		<div v-if="column.cards && column.cards.length">
+			<Card
+				v-for="card in column.cards"
+				:key="card.id"
+				:card="card"
+				@delete-card="$emit('delete-card', card.id)"
+			/>
+		</div>
+		<div v-else>No cards</div>
 		<form @submit.prevent="addCard">
 			<input v-model="newCardTitle" placeholder="Card title" required />
 			<textarea v-model="newCardDescription" placeholder="Description"></textarea>
@@ -20,13 +23,16 @@
 
 <script>
 import Card from './Card.vue'
-import { VueDraggable } from 'vue-draggable-plus'
+import { createCard } from '../api/cards'
 
 export default {
 	name: 'Column',
-	components: { Card, VueDraggable },
+	components: { Card },
 	props: {
-		column: Object,
+		column: {
+			type: Object,
+			required: true,
+		},
 		allColumns: Array,
 	},
 	data() {
@@ -36,12 +42,18 @@ export default {
 		}
 	},
 	methods: {
-		addCard() {
-			const card = {
-				title: this.newCardTitle,
-				description: this.newCardDescription,
+		async addCard() {
+			if (!this.column.cards) {
+				this.column.cards = []
 			}
-			this.$emit('add-card', this.column.id, card)
+			const newCard = await createCard(
+				this.column.id,
+				this.newCardTitle,
+				this.newCardDescription,
+			)
+			this.column.cards.push(newCard)
+			this.newCardTitle = ''
+			this.newCardDescription = ''
 		},
 	},
 }

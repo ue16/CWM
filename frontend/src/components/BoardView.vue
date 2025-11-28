@@ -1,103 +1,98 @@
 <template>
 	<div>
 		<router-link to="/">&larr; Back to boards</router-link>
-		<h1>{{ board.name }}</h1>
-		<form class="add-column-form" @submit.prevent="addColumn">
+		<div v-if="loading" class="loading">Loading board...</div>
+		<div v-if="error" class="error">Error: {{ error }}</div>
+		<h1 v-if="board">{{ board.name }}</h1>
+		<form v-if="board" class="add-column-form" @submit.prevent="addColumn">
 			<input v-model="newColumnName" placeholder="New column name" required />
 			<button type="submit">Add column</button>
 		</form>
-		<VueDraggable
-			v-model="columns"
-			group="columns"
-			item-key="id"
-			class="board"
-			:animation="200"
-			:tag="'div'"
-		>
-			<template v-for="column in columns">
-				<Column
-					:column="column"
-					:all-columns="columns"
-					@delete-column="deleteColumn"
-					@add-card="addCard"
-					@delete-card="deleteCard"
-					style="flex: 1; margin: 0 8px"
-				/>
-			</template>
-		</VueDraggable>
+		<div v-if="columns && columns.length" class="board">
+			<Column
+				v-for="column in columns"
+				:key="column.id"
+				:column="column"
+				:all-columns="columns"
+				@delete-column="deleteColumn"
+				@add-card="addCard"
+				@delete-card="deleteCard"
+				style="flex: 1; margin: 0 8px"
+			/>
+		</div>
+		<div v-else class="board">No columns yet. Create one!</div>
 	</div>
 </template>
 
 <script>
 import Column from './Column.vue'
 import { VueDraggable } from 'vue-draggable-plus'
+import { fetchBoard } from '@/api/boards'
+import { fetchColumns, createColumn, deleteColumn } from '@/api/columns'
+import { fetchCards, createCard, deleteCard } from '@/api/cards'
 
 export default {
 	name: 'BoardView',
 	components: { Column, VueDraggable },
 	data() {
 		return {
-			board: { id: 3, name: 'Project Gamma' }, // Replace with API data later
-			columns: [
-				{
-					id: 1,
-					name: 'To Do',
-					cards: [
-						{
-							id: 1,
-							title: 'Identify key stakeholders',
-							description: 'Some more elaborate explanation',
-						},
-						{
-							id: 2,
-							title: 'Draft initial project plan',
-							description: 'Some more elaborate explanation',
-						},
-					],
-				},
-				{
-					id: 2,
-					name: 'In Progress',
-					cards: [
-						{
-							id: 3,
-							title: 'Develop core features',
-							description: 'Some more elaborate explanation',
-						},
-					],
-				},
-				{
-					id: 3,
-					name: 'Done',
-					cards: [
-						{ id: 4, title: 'Set up testing framework' },
-						{ id: 5, title: 'Conduct initial tests' },
-					],
-				},
-			], // Replace with API data later
+			board: null,
+			columns: [],
 			newColumnName: '',
+			error: null,
+			loading: true,
 		}
 	},
 	methods: {
-		addColumn() {
-			// Placeholder for column creation logic
-			console.log('Adding column:', this.newColumnName)
+		async addColumn() {
+			const newColumn = await createColumn(this.board.id, this.newColumnName)
+			newColumn.cards = []
+			this.columns.push(newColumn)
+			this.newColumnName = ''
 		},
-		deleteColumn(id) {
-			// Placeholder for column deletion logic
-			console.log('Deleting column:', id)
+		async deleteColumn(id) {
+			await deleteColumn(id)
+			this.columns = this.columns.filter((column) => column.id !== id)
 		},
-		addCard(columnId, card) {
-			// Placeholder for card creation logic
-			console.log('Adding card:', card)
+		async addCard(columnId, title) {
+			const newCard = await createCard(columnId, title)
+			// Card will be added through parent-child prop binding
 		},
-		deleteCard(cardId) {
-			// Placeholder for card deletion logic
-			console.log('Deleting card:', cardId)
+		async deleteCard(cardId) {
+			await deleteCard(cardId)
+			// Remove card from all columns
+			for (const column of this.columns) {
+				if (column.cards) {
+					column.cards = column.cards.filter((card) => card.id !== cardId)
+				}
+			}
+		},
+		async loadBoardData() {
+			try {
+				const boardId = parseInt(this.$route.params.id)
+				this.board = await fetchBoard(boardId)
+				this.columns = await fetchColumns(boardId)
+				if (!this.columns) {
+					this.columns = []
+				}
+				// Initialize cards array on all columns
+				for (const column of this.columns) {
+					if (!column.cards) {
+						column.cards = []
+					}
+					column.cards = await fetchCards(column.id)
+				}
+			} catch (err) {
+				console.error('Error loading board:', err)
+				this.error = err.message
+			} finally {
+				this.loading = false
+			}
 		},
 	},
-	mounted() {
-		console.log('BoardView mounted. Columns data:', this.columns)
+	async mounted() {
+		this.loading = true
+		await this.loadBoardData()
 	},
 }
 </script>
@@ -112,5 +107,17 @@ export default {
 }
 .add-column-form {
 	flex-direction: row;
+}
+.loading {
+	padding: 16px;
+	color: #666;
+	font-size: 16px;
+}
+.error {
+	padding: 16px;
+	color: #d32f2f;
+	background-color: #ffebee;
+	border-radius: 4px;
+	margin: 8px;
 }
 </style>

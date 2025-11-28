@@ -18,27 +18,37 @@
 </template>
 
 <script>
+import { fetchBoards, createBoard, deleteBoard } from '../api/boards'
+
 export default {
 	name: 'BoardList',
 	data() {
 		return {
-			boards: [
-				{ id: 1, name: 'Project Alpha' },
-				{ id: 2, name: 'Project Beta' },
-				{ id: 3, name: 'Project Gamma' },
-			], // Replace with API data later
+			boards: [],
 			newBoardName: '',
 		}
 	},
 	methods: {
-		createBoard() {
-			// Placeholder for board creation logic
-			console.log('Creating board:', this.newBoardName)
+		async loadBoards() {
+			try {
+				this.boards = await fetchBoards()
+			} catch (err) {
+				console.error('Error loading boards:', err)
+			}
 		},
-		deleteBoard(id) {
-			// Placeholder for board deletion logic
-			console.log('Deleting board:', id)
+		async createBoard() {
+			const newBoard = await createBoard(this.newBoardName)
+			newBoard.columns = []
+			this.boards.push(newBoard)
+			this.newBoardName = ''
 		},
+		async deleteBoard(id) {
+			await deleteBoard(id)
+			this.boards = this.boards.filter((board) => board.id !== id)
+		},
+	},
+	mounted() {
+		this.loadBoards()
 	},
 }
 </script>
