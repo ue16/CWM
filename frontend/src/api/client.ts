@@ -11,7 +11,7 @@ export const client = axios.create({
 client.interceptors.request.use((config) => {
 	const token = authAPI.getToken()
 	if (token) {
-		config.headers['Authorization'] = `Bearer ${token}`
+		config.headers['Authorization'] = `${token}`
 	}
 	return config
 })

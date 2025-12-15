@@ -13,10 +13,10 @@ import (
 // @Tags All-Boards
 // @Accept json
 // @Produce json
-// @Param User-ID header string true "User ID"
+// @Param Authorization header string true "Bearer token from login"
 // @Success 200 {array} internal.Board "List of boards"
-// @Failure 400 {object} map[string]string "Invalid or missing user ID"
-// @Failure 500 {object} map[string]string "Failed to list boards"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to process boards"
 // @Router /api/v2/boards [get]
 func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -46,15 +46,17 @@ func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Get Board
-// @Description Fetch a board by its ID
+// @Description Fetch a board by its ID.
 // @Tags Boards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param boardId path int true "Board ID"
 // @Success 200 {object} Board "Board details"
-// @Failure 400 {object} map[string]string "Invalid board ID"
-// @Failure 404 {object} map[string]string "Board not found"
-// @Failure 500 {object} map[string]string "Failed to encode response"
+// @Failure 400 {object} JSONError "Invalid board ID"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 404 {object} JSONError "Board not found"
+// @Failure 500 {object} JSONError "Failed to encode response"
 // @Router /api/v2/board/{boardId} [get]
 func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -100,15 +102,17 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update Board
-// @Description Update a board's details
+// @Description Update a board's details.
 // @Tags Boards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param User-ID header string true "User ID"
 // @Param board body internal.Board true "Board object"
-// @Success 200 {object} map[string]string "Board updated successfully"
-// @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
-// @Failure 500 {object} map[string]string "Failed to update board"
+// @Success 200 {object} JSONMessage "Board updated successfully"
+// @Failure 400 {object} JSONError "Invalid JSON body or missing fields"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to update board"
 // @Router /api/v2/board/ [put]
 func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -147,15 +151,17 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Create Board
-// @Description Create a new board for the authenticated user
+// @Description Create a new board for the authenticated user.
 // @Tags Boards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param User-ID header string true "User ID"
 // @Param input body internal.nameRequest true "Board creation request"
 // @Success 201 {object} Board "Created board"
-// @Failure 400 {object} map[string]string "Invalid input or missing name"
-// @Failure 500 {object} map[string]string "Failed to create board"
+// @Failure 400 {object} JSONError "Invalid input or missing name"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to create board"
 // @Router /api/v2/board/ [post]
 func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -195,15 +201,17 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete Board
-// @Description Delete a board by its ID
+// @Description Delete a board by its ID.
 // @Tags Boards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param board body internal.idRequest true "Board id"
 // @Success 204 "Board deleted successfully"
-// @Failure 400 {object} map[string]string "Invalid request body"
-// @Failure 404 {object} map[string]string "Board not found"
-// @Failure 500 {object} map[string]string "Failed to delete board"
+// @Failure 400 {object} JSONError "Invalid request body"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 404 {object} JSONError "Board not found"
+// @Failure 500 {object} JSONError "Failed to delete board"
 // @Router /api/v2/board/ [delete]
 func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

@@ -97,3 +97,13 @@ type AuthResponse struct {
 	Token   string `json:"token,omitempty"`
 	User    *User  `json:"user,omitempty"`
 }
+
+// For documentation
+
+type JSONMessage struct {
+	Message string `json:"message"`
+}
+
+type JSONError struct {
+	Error string `json:"error"`
+}

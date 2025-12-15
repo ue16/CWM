@@ -51,7 +51,7 @@ export const authAPI = {
 	verify: async (token: string): Promise<User> => {
 		const response = await client.get('/api/v2/auth/verify', {
 			headers: {
-				Authorization: `Bearer ${token}`,
+				Authorization: `${token}`,
 			},
 		})
 		return response.data
@@ -64,7 +64,7 @@ export const authAPI = {
 
 	setToken: (token: string): void => {
 		localStorage.setItem('token', token)
-		client.defaults.headers.common['Authorization'] = `Bearer ${token}`
+		client.defaults.headers.common['Authorization'] = `${token}`
 	},
 
 	getToken: (): string | null => {

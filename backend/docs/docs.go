@@ -26,7 +26,7 @@ const docTemplate = `{
     "paths": {
         "/api/v2/auth/login": {
             "post": {
-                "description": "Authenticate a user with username and password",
+                "description": "Authenticate a user with username and password. Returns a login token that should be used in subsequents requests in the format 'Bearer x:xyz'.",
                 "consumes": [
                     "application/json"
                 ],
@@ -58,28 +58,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -87,7 +78,7 @@ const docTemplate = `{
         },
         "/api/v2/auth/register": {
             "post": {
-                "description": "Create a new user account",
+                "description": "Create a new user account.",
                 "consumes": [
                     "application/json"
                 ],
@@ -119,19 +110,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or user exists",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -139,7 +124,7 @@ const docTemplate = `{
         },
         "/api/v2/auth/verify": {
             "get": {
-                "description": "Verify if the provided token is valid",
+                "description": "Verify if the provided token is valid.",
                 "consumes": [
                     "application/json"
                 ],
@@ -169,10 +154,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Invalid token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -180,7 +162,7 @@ const docTemplate = `{
         },
         "/api/v2/board/": {
             "put": {
-                "description": "Update a board's details",
+                "description": "Update a board's details.",
                 "consumes": [
                     "application/json"
                 ],
@@ -192,6 +174,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update Board",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "User ID",
@@ -213,34 +202,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Board updated successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONMessage"
                         }
                     },
                     "400": {
                         "description": "Invalid JSON body or missing fields",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to update board",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Create a new board for the authenticated user",
+                "description": "Create a new board for the authenticated user.",
                 "consumes": [
                     "application/json"
                 ],
@@ -252,6 +238,13 @@ const docTemplate = `{
                 ],
                 "summary": "Create Board",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "User ID",
@@ -279,25 +272,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input or missing name",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to create board",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a board by its ID",
+                "description": "Delete a board by its ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -309,6 +302,13 @@ const docTemplate = `{
                 ],
                 "summary": "Delete Board",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Board id",
                         "name": "board",
@@ -326,28 +326,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "404": {
                         "description": "Board not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to delete board",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -355,7 +352,7 @@ const docTemplate = `{
         },
         "/api/v2/board/{boardId}": {
             "get": {
-                "description": "Fetch a board by its ID",
+                "description": "Fetch a board by its ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -367,6 +364,13 @@ const docTemplate = `{
                 ],
                 "summary": "Get Board",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "Board ID",
@@ -385,28 +389,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid board ID",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "404": {
                         "description": "Board not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to encode response",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -428,8 +429,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "User-ID",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }
@@ -444,22 +445,16 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "400": {
-                        "description": "Invalid or missing user ID",
+                    "401": {
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
-                        "description": "Failed to list boards",
+                        "description": "Failed to process boards",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -467,7 +462,7 @@ const docTemplate = `{
         },
         "/api/v2/card/": {
             "put": {
-                "description": "Update a card's details",
+                "description": "Update a card's details.",
                 "consumes": [
                     "application/json"
                 ],
@@ -479,6 +474,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update Card",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Card object",
                         "name": "card",
@@ -493,43 +495,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Card updated successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONMessage"
                         }
                     },
                     "400": {
                         "description": "Invalid JSON body or missing fields",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to update card",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Create a new card in a specific column",
+                "description": "Create a new card in a specific column.",
                 "consumes": [
                     "application/json"
                 ],
@@ -541,6 +531,13 @@ const docTemplate = `{
                 ],
                 "summary": "Create Card",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Card creation payload",
                         "name": "card",
@@ -587,34 +584,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input or missing required fields",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to create card",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a card by its ID",
+                "description": "Delete a card by its ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -626,6 +614,13 @@ const docTemplate = `{
                 ],
                 "summary": "Delete Card",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Card id",
                         "name": "card",
@@ -643,37 +638,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "404": {
                         "description": "Card not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to delete card",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -681,7 +664,7 @@ const docTemplate = `{
         },
         "/api/v2/card/{columnId}": {
             "get": {
-                "description": "Fetch all cards for a specific column",
+                "description": "Fetch all cards for a specific column.",
                 "consumes": [
                     "application/json"
                 ],
@@ -694,6 +677,13 @@ const docTemplate = `{
                 "summary": "Get Cards",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "type": "integer",
                         "description": "Column ID",
                         "name": "columnId",
@@ -703,12 +693,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -716,7 +703,7 @@ const docTemplate = `{
         },
         "/api/v2/column/": {
             "put": {
-                "description": "Update a column's details",
+                "description": "Update a column's details.",
                 "consumes": [
                     "application/json"
                 ],
@@ -728,6 +715,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update Column",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Column object",
                         "name": "input",
@@ -742,43 +736,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Column updated successfully",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONMessage"
                         }
                     },
                     "400": {
                         "description": "Invalid JSON body or missing fields",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to update column",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Create a new column in a specific board",
+                "description": "Create a new column in a specific board.",
                 "consumes": [
                     "application/json"
                 ],
@@ -790,6 +772,13 @@ const docTemplate = `{
                 ],
                 "summary": "Create Column",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Column creation payload",
                         "name": "input",
@@ -828,34 +817,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid input or missing fields",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to create column",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a column by its ID",
+                "description": "Delete a column by its ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -867,6 +847,13 @@ const docTemplate = `{
                 ],
                 "summary": "Delete Column",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "Column ID",
                         "name": "input",
@@ -884,37 +871,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "404": {
                         "description": "Column not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to delete column",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -922,7 +897,7 @@ const docTemplate = `{
         },
         "/api/v2/column/{boardId}": {
             "get": {
-                "description": "Fetch all columns for a specific board",
+                "description": "Fetch all columns for a specific board.",
                 "consumes": [
                     "application/json"
                 ],
@@ -934,6 +909,13 @@ const docTemplate = `{
                 ],
                 "summary": "Get Columns",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "integer",
                         "description": "Board ID",
@@ -955,28 +937,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid board ID",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Invalid auth token",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     },
                     "500": {
                         "description": "Failed to fetch columns",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/internal.JSONError"
                         }
                     }
                 }
@@ -1049,6 +1022,22 @@ const docTemplate = `{
                 },
                 "position": {
                     "type": "integer"
+                }
+            }
+        },
+        "internal.JSONError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal.JSONMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
                 }
             }
         },

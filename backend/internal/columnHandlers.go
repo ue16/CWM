@@ -9,15 +9,16 @@ import (
 )
 
 // @Summary Get Columns
-// @Description Fetch all columns for a specific board
+// @Description Fetch all columns for a specific board.
 // @Tags Columns
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param boardId path int true "Board ID"
 // @Success 200 {array} Column
-// @Failure 400 {object} map[string]string "Invalid board ID"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 500 {object} map[string]string "Failed to fetch columns"
+// @Failure 400 {object} JSONError "Invalid board ID"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to fetch columns"
 // @Router /api/v2/column/{boardId} [get]
 func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -63,17 +64,18 @@ func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Create Column
-// @Description Create a new column in a specific board
+// @Description Create a new column in a specific board.
 // @Tags Columns
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param input body object true "Column creation payload"
 // @Param input.board_id body int true "Board ID"
 // @Param input.name body string true "Column name"
 // @Success 201 {object} Column
-// @Failure 400 {object} map[string]string "Invalid input or missing fields"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 500 {object} map[string]string "Failed to create column"
+// @Failure 400 {object} JSONError "Invalid input or missing fields"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to create column"
 // @Router /api/v2/column/ [post]
 func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -141,15 +143,16 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update Column
-// @Description Update a column's details
+// @Description Update a column's details.
 // @Tags Columns
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param input body internal.Column true "Column object"
-// @Success 200 {object} map[string]string "Column updated successfully"
-// @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 500 {object} map[string]string "Failed to update column"
+// @Success 200 {object} JSONMessage "Column updated successfully"
+// @Failure 400 {object} JSONError "Invalid JSON body or missing fields"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to update column"
 // @Router /api/v2/column/ [put]
 func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -188,16 +191,17 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete Column
-// @Description Delete a column by its ID
+// @Description Delete a column by its ID.
 // @Tags Columns
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param input body internal.idRequest true "Column ID"
 // @Success 204 "Column deleted successfully"
-// @Failure 400 {object} map[string]string "Invalid request body"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 404 {object} map[string]string "Column not found"
-// @Failure 500 {object} map[string]string "Failed to delete column"
+// @Failure 400 {object} JSONError "Invalid request body"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 404 {object} JSONError "Column not found"
+// @Failure 500 {object} JSONError "Failed to delete column"
 // @Router /api/v2/column/ [delete]
 func (s *Server) deleteColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

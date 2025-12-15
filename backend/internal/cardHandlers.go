@@ -9,12 +9,13 @@ import (
 )
 
 // @Summary Get Cards
-// @Description Fetch all cards for a specific column
+// @Description Fetch all cards for a specific column.
 // @Tags Cards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param columnId path int true "Column ID"
-// @Failure 401 {object} map[string]string "Unauthorized"
+// @Failure 401 {object} JSONError "Invalid auth token"
 // @Router /api/v2/card/{columnId} [get]
 func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -60,18 +61,19 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Create Card
-// @Description Create a new card in a specific column
+// @Description Create a new card in a specific column.
 // @Tags Cards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param card body object true "Card creation payload"
 // @Param card.column_id body int true "Column ID"
 // @Param card.title body string true "Card title"
 // @Param card.description body string false "Card description"
 // @Success 201 {object} Card
-// @Failure 400 {object} map[string]string "Invalid input or missing required fields"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 500 {object} map[string]string "Failed to create card"
+// @Failure 400 {object} JSONError "Invalid input or missing required fields"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to create card"
 // @Router /api/v2/card/ [post]
 func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -140,15 +142,16 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Update Card
-// @Description Update a card's details
+// @Description Update a card's details.
 // @Tags Cards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param card body internal.Card true "Card object"
-// @Success 200 {object} map[string]string "Card updated successfully"
-// @Failure 400 {object} map[string]string "Invalid JSON body or missing fields"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 500 {object} map[string]string "Failed to update card"
+// @Success 200 {object} JSONMessage "Card updated successfully"
+// @Failure 400 {object} JSONError "Invalid JSON body or missing fields"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 500 {object} JSONError "Failed to update card"
 // @Router /api/v2/card/ [put]
 func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -187,16 +190,17 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Delete Card
-// @Description Delete a card by its ID
+// @Description Delete a card by its ID.
 // @Tags Cards
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer token from login"
 // @Param card body internal.idRequest true "Card id"
 // @Success 204 "Card deleted successfully"
-// @Failure 400 {object} map[string]string "Invalid request body"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Failure 404 {object} map[string]string "Card not found"
-// @Failure 500 {object} map[string]string "Failed to delete card"
+// @Failure 400 {object} JSONError "Invalid request body"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 404 {object} JSONError "Card not found"
+// @Failure 500 {object} JSONError "Failed to delete card"
 // @Router /api/v2/card/ [delete]
 func (s *Server) deleteCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

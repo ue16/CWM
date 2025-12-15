@@ -12,15 +12,15 @@ import (
 
 // login handles user login and returns a token.
 // @Summary Login user
-// @Description Authenticate a user with username and password
+// @Description Authenticate a user with username and password. Returns a login token that should be used in subsequents requests in the format 'Bearer x:xyz'.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param loginReq body LoginRequest true "Login credentials"
+// @Param login body LoginRequest true "Login credentials"
 // @Success 200 {object} LoginResponse "Login successful"
-// @Failure 400 {object} map[string]string "Invalid request"
-// @Failure 401 {object} map[string]string "Invalid credentials"
-// @Failure 500 {object} map[string]string "Server error"
+// @Failure 400 {object} JSONError "Invalid request"
+// @Failure 401 {object} JSONError "Invalid credentials"
+// @Failure 500 {object} JSONError "Server error"
 // @Router /api/v2/auth/login [post]
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
@@ -51,7 +51,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	token := generateToken(user.ID)
 
 	response := LoginResponse{
-		Token: token,
+		Token: "Bearer " + token,
 		User: User{
 			ID:        user.ID,
 			Username:  user.Username,
@@ -66,14 +66,14 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 
 // register handles user registration.
 // @Summary Register a new user
-// @Description Create a new user account
+// @Description Create a new user account.
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param registerReq body RegisterRequest true "Registration details"
 // @Success 201 {object} AuthResponse "User created successfully"
-// @Failure 400 {object} map[string]string "Invalid request or user exists"
-// @Failure 500 {object} map[string]string "Server error"
+// @Failure 400 {object} JSONError "Invalid request or user exists"
+// @Failure 500 {object} JSONError "Server error"
 // @Router /api/v2/auth/register [post]
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
@@ -139,13 +139,13 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 
 // verify checks if a token is valid and returns the user.
 // @Summary Verify authentication token
-// @Description Verify if the provided token is valid
+// @Description Verify if the provided token is valid.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param token header string true "Auth token"
+// @Param Authorization header string true "Bearer token from login"
 // @Success 200 {object} User "Token is valid"
-// @Failure 401 {object} map[string]string "Invalid token"
+// @Failure 401 {object} JSONError "Invalid token"
 // @Router /api/v2/auth/verify [get]
 func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
