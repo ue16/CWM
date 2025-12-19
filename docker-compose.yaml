@@ -23,12 +23,16 @@ services:
     build:
       context: ./backend/
       target: card
+    deploy:
+      replicas: 3
 
   column:
     <<: *base
     build:
       context: ./backend/
       target: column
+    deploy:
+      replicas: 2
 
   docs:
     <<: *base
@@ -41,6 +45,8 @@ services:
     build:
       context: ./backend/
       target: overview
+    deploy:
+      replicas: 2
 
   frontend:
     build: ./frontend/
