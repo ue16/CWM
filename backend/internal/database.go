@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,28 +15,55 @@ var _ Store = (*DB)(nil)
 
 // DB wraps a pgxpool.Pool and provides CRUD helpers for the Kanban models.
 type DB struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	cancel context.CancelFunc
 }
 
-// NewDB creates a new DB given a Postgres connection string.
+// NewDB creates a new DB given a Postgres connection string. It retries for up
+// to 5 times (max ~1 Minute) or fails.
 // Example connString: "postgres://user:pass@localhost:5432/dbname"
-func NewDB(ctx context.Context, connString string) (*DB, error) {
-	pool, err := pgxpool.New(ctx, connString)
+func NewDB(connString string) (*DB, error) {
+	connect := func(ctx context.Context) (*DB, error) {
+		pool, err := pgxpool.New(ctx, connString)
+		if err != nil {
+			return nil, fmt.Errorf("pgxpool.New: %w", err)
+		}
+
+		// Verify connection
+		if err := pool.Ping(ctx); err != nil {
+			pool.Close()
+			return nil, fmt.Errorf("ping db: %w", err)
+		}
+
+		return &DB{pool: pool}, nil
+	}
+
+	var db *DB
+	var err error
+	var wait time.Duration
+	maxAttempts := 5
+	for attempt := range maxAttempts {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		db, err = connect(ctx)
+		if err == nil {
+			db.cancel = cancel
+			break
+		}
+		cancel()
+
+		wait = time.Second * time.Duration(attempt+1)
+		log.Printf("failed to connect to db (attempt %d/%d): %v; retrying in %s", attempt, maxAttempts, err, wait)
+		time.Sleep(wait)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("pgxpool.New: %w", err)
+		return nil, fmt.Errorf("failed to connect to db after %d attempts: %v", maxAttempts, err)
 	}
-
-	// Verify connection
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
-		return nil, fmt.Errorf("ping db: %w", err)
-	}
-
-	return &DB{pool: pool}, nil
+	return db, nil
 }
 
 // Close releases the underlying pool connections.
 func (db *DB) Close() {
+	db.cancel()
 	if db.pool != nil {
 		db.pool.Close()
 	}
