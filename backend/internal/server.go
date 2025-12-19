@@ -10,8 +10,10 @@ import (
 )
 
 type Server struct {
-	addr  string
-	store Store
+	addr   string
+	store  Store
+	secret string
+	expiry int
 }
 
 // Prepare creates and returns an http.Handler that renders simple Kanban pages using Go html/templates.
@@ -19,10 +21,12 @@ type Server struct {
 // Note: the function keeps the same parameters so existing call sites don't need to change,
 // but it returns an http.Handler instead of starting the server. The caller can then
 // start the server (e.g. http.ListenAndServe) or use the handler for testing.
-func PrepareServer(addr string, store Store) http.Handler {
+func PrepareServer(addr, secret string, store Store) http.Handler {
 	s := &Server{
 		addr,
 		store,
+		secret,
+		24,
 	}
 	r := chi.NewRouter()
 

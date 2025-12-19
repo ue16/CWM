@@ -13,6 +13,7 @@ import (
 )
 
 func TestGetColumns(t *testing.T) {
+	secret := "secret"
 	columns := []Column{
 		{ID: 1, Name: "Column 1", BoardID: 1},
 		{ID: 2, Name: "Column 2", BoardID: 1},
@@ -26,10 +27,10 @@ func TestGetColumns(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/column/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -50,6 +51,7 @@ func TestGetColumns(t *testing.T) {
 }
 
 func TestGetColumnsUnauthorized(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
@@ -59,10 +61,10 @@ func TestGetColumnsUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/column/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -78,6 +80,7 @@ func TestGetColumnsUnauthorized(t *testing.T) {
 }
 
 func TestCreateColumn(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "New Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
@@ -91,11 +94,11 @@ func TestCreateColumn(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"board_id": 1, "name": "New Column"}`
 	req := httptest.NewRequest(http.MethodPost, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.createColumn(rr, req)
 
@@ -113,6 +116,7 @@ func TestCreateColumn(t *testing.T) {
 }
 
 func TestCreateColumnUnauthorized(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
@@ -125,11 +129,11 @@ func TestCreateColumnUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"board_id": 1, "name": "New Column"}`
 	req := httptest.NewRequest(http.MethodPost, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.createColumn(rr, req)
 
@@ -142,6 +146,7 @@ func TestCreateColumnUnauthorized(t *testing.T) {
 }
 
 func TestUpdateColumn(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
@@ -155,11 +160,11 @@ func TestUpdateColumn(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "name": "Updated Column"}`
 	req := httptest.NewRequest(http.MethodPut, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateColumn(rr, req)
 
@@ -172,6 +177,7 @@ func TestUpdateColumn(t *testing.T) {
 }
 
 func TestUpdateColumnUnauthorized(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
@@ -185,11 +191,11 @@ func TestUpdateColumnUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "name": "Updated Column"}`
 	req := httptest.NewRequest(http.MethodPut, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateColumn(rr, req)
 
@@ -202,6 +208,7 @@ func TestUpdateColumnUnauthorized(t *testing.T) {
 }
 
 func TestDeleteColumn(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
@@ -215,11 +222,11 @@ func TestDeleteColumn(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteColumn(rr, req)
 
@@ -232,6 +239,7 @@ func TestDeleteColumn(t *testing.T) {
 }
 
 func TestDeleteColumnUnauthorized(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
@@ -245,11 +253,11 @@ func TestDeleteColumnUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/column/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteColumn(rr, req)
 

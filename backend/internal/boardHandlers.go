@@ -21,7 +21,7 @@ import (
 func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -61,7 +61,7 @@ func (s *Server) listBoards(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -117,7 +117,7 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -166,7 +166,7 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -216,7 +216,7 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return

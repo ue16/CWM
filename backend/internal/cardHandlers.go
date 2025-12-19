@@ -20,7 +20,7 @@ import (
 func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -78,7 +78,7 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -156,7 +156,7 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -205,7 +205,7 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteCard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return

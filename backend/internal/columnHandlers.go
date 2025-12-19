@@ -23,7 +23,7 @@ import (
 func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -80,7 +80,7 @@ func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -157,7 +157,7 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, "{\"error\": \"unauthorized\"}", http.StatusUnauthorized)
 		return
@@ -206,7 +206,7 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteColumn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	userID, err := getUserIDFromAuthToken(r)
+	userID, err := s.getUserIDFromAuthToken(r)
 	if err != nil {
 		http.Error(w, `{"error": "unauthorized"}`, http.StatusUnauthorized)
 		return

@@ -13,6 +13,7 @@ import (
 )
 
 func TestGetCards(t *testing.T) {
+	secret := "secret"
 	cards := []Card{
 		{ID: 1, Title: "Card 1", ColumnID: 1},
 		{ID: 2, Title: "Card 2", ColumnID: 1},
@@ -30,10 +31,10 @@ func TestGetCards(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/card/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("columnId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -57,6 +58,7 @@ func TestGetCards(t *testing.T) {
 }
 
 func TestGetCardsUnauthorized(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
@@ -70,10 +72,10 @@ func TestGetCardsUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/card/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("columnId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -89,6 +91,7 @@ func TestGetCardsUnauthorized(t *testing.T) {
 }
 
 func TestCreateCard(t *testing.T) {
+	secret := "secret"
 	card := Card{ID: 1, Title: "New Card", ColumnID: 1, Position: 1}
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
@@ -106,11 +109,11 @@ func TestCreateCard(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"column_id": 1, "title": "New Card", "description": "Description"}`
 	req := httptest.NewRequest(http.MethodPost, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.createCard(rr, req)
 
@@ -128,6 +131,7 @@ func TestCreateCard(t *testing.T) {
 }
 
 func TestCreateCardUnauthorized(t *testing.T) {
+	secret := "secret"
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
@@ -144,11 +148,11 @@ func TestCreateCardUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"column_id": 1, "title": "New Card", "description": "Description"}`
 	req := httptest.NewRequest(http.MethodPost, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.createCard(rr, req)
 
@@ -161,6 +165,7 @@ func TestCreateCardUnauthorized(t *testing.T) {
 }
 
 func TestUpdateCard(t *testing.T) {
+	secret := "secret"
 	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1}
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
@@ -178,11 +183,11 @@ func TestUpdateCard(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "title": "Updated Card", "description": "Updated Description"}`
 	req := httptest.NewRequest(http.MethodPut, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateCard(rr, req)
 
@@ -195,6 +200,7 @@ func TestUpdateCard(t *testing.T) {
 }
 
 func TestUpdateCardUnauthorized(t *testing.T) {
+	secret := "secret"
 	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1}
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
@@ -212,11 +218,11 @@ func TestUpdateCardUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "title": "Updated Card", "description": "Updated Description"}`
 	req := httptest.NewRequest(http.MethodPut, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateCard(rr, req)
 
@@ -229,6 +235,7 @@ func TestUpdateCardUnauthorized(t *testing.T) {
 }
 
 func TestDeleteCard(t *testing.T) {
+	secret := "secret"
 	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1}
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
@@ -246,11 +253,11 @@ func TestDeleteCard(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteCard(rr, req)
 
@@ -263,6 +270,7 @@ func TestDeleteCard(t *testing.T) {
 }
 
 func TestDeleteCardUnauthorized(t *testing.T) {
+	secret := "secret"
 	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1}
 	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
@@ -280,11 +288,11 @@ func TestDeleteCardUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/card/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteCard(rr, req)
 

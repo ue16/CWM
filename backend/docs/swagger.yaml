@@ -116,11 +116,11 @@ paths:
       consumes:
       - application/json
       description: Authenticate a user with username and password. Returns a login
-        token that should be used in subsequents requests in the format 'Bearer x:xyz'.
+        token that should be used in subsequent requests in the format 'Bearer x:xyz'.
       parameters:
       - description: Login credentials
         in: body
-        name: loginReq
+        name: login
         required: true
         schema:
           $ref: '#/definitions/internal.LoginRequest'
@@ -182,9 +182,9 @@ paths:
       - application/json
       description: Verify if the provided token is valid.
       parameters:
-      - description: Auth token
+      - description: Bearer token from login
         in: header
-        name: token
+        name: Authorization
         required: true
         type: string
       produces:

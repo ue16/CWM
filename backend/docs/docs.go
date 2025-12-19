@@ -26,7 +26,7 @@ const docTemplate = `{
     "paths": {
         "/api/v2/auth/login": {
             "post": {
-                "description": "Authenticate a user with username and password. Returns a login token that should be used in subsequents requests in the format 'Bearer x:xyz'.",
+                "description": "Authenticate a user with username and password. Returns a login token that should be used in subsequent requests in the format 'Bearer x:xyz'.",
                 "consumes": [
                     "application/json"
                 ],
@@ -40,7 +40,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Login credentials",
-                        "name": "loginReq",
+                        "name": "login",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -138,8 +138,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Auth token",
-                        "name": "token",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     }

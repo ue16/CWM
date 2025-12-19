@@ -3,23 +3,17 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// Helper to create a valid token for testing
-func createTestToken(userID int) string {
-	return fmt.Sprintf("%d:%d", userID, time.Now().Add(24*time.Hour).Unix())
-}
-
 func TestListBoards(t *testing.T) {
+	secret := "secret"
 	b := []Board{
 		{ID: 1, Name: "Alpha", UserID: 1},
 		{ID: 2, Name: "Beta", UserID: 1},
@@ -29,10 +23,10 @@ func TestListBoards(t *testing.T) {
 			return b, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/boards", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.listBoards(rr, req)
 
@@ -50,12 +44,13 @@ func TestListBoards(t *testing.T) {
 }
 
 func TestListBoardsMissingHeader(t *testing.T) {
+	secret := "secret"
 	mock := &MockStore{
 		ListBoardsFunc: func(ctx context.Context, userID int) ([]Board, error) {
 			return nil, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/boards", nil)
 	rr := httptest.NewRecorder()
@@ -70,16 +65,17 @@ func TestListBoardsMissingHeader(t *testing.T) {
 }
 
 func TestGetBoard(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Alpha", UserID: 1}
 	mock := &MockStore{
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/board/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -100,16 +96,17 @@ func TestGetBoard(t *testing.T) {
 }
 
 func TestGetBoardUnauthorized(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Alpha", UserID: 2}
 	mock := &MockStore{
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	req := httptest.NewRequest(http.MethodGet, "/board/1", nil)
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	ctx := chi.NewRouteContext()
 	ctx.URLParams.Add("boardId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, ctx))
@@ -125,17 +122,18 @@ func TestGetBoardUnauthorized(t *testing.T) {
 }
 
 func TestCreateBoard(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "New Board", UserID: 1}
 	mock := &MockStore{
 		CreateBoardFunc: func(ctx context.Context, name string, userID int) (Board, error) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"name": "New Board"}`
 	req := httptest.NewRequest(http.MethodPost, "/board/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.createBoard(rr, req)
 
@@ -153,12 +151,13 @@ func TestCreateBoard(t *testing.T) {
 }
 
 func TestCreateBoardMissingHeader(t *testing.T) {
+	secret := "secret"
 	mock := &MockStore{
 		CreateBoardFunc: func(ctx context.Context, name string, userID int) (Board, error) {
 			return Board{}, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"name": "New Board"}`
 	req := httptest.NewRequest(http.MethodPost, "/board/", strings.NewReader(body))
@@ -174,6 +173,7 @@ func TestCreateBoardMissingHeader(t *testing.T) {
 }
 
 func TestUpdateBoard(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Updated Board", UserID: 1}
 	mock := &MockStore{
 		UpdateBoardFunc: func(ctx context.Context, b Board) error {
@@ -183,11 +183,11 @@ func TestUpdateBoard(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "name": "Updated Board", "user_id": 1}`
 	req := httptest.NewRequest(http.MethodPut, "/board/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateBoard(rr, req)
 
@@ -200,6 +200,7 @@ func TestUpdateBoard(t *testing.T) {
 }
 
 func TestUpdateBoardUnauthorized(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Updated Board", UserID: 2}
 	mock := &MockStore{
 		UpdateBoardFunc: func(ctx context.Context, b Board) error {
@@ -209,11 +210,11 @@ func TestUpdateBoardUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1, "name": "Updated Board", "user_id": 2}`
 	req := httptest.NewRequest(http.MethodPut, "/board/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.updateBoard(rr, req)
 
@@ -226,6 +227,7 @@ func TestUpdateBoardUnauthorized(t *testing.T) {
 }
 
 func TestDeleteBoard(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Board to Delete", UserID: 1}
 	mock := &MockStore{
 		DeleteBoardFunc: func(ctx context.Context, id int) error {
@@ -235,11 +237,11 @@ func TestDeleteBoard(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/board/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteBoard(rr, req)
 
@@ -252,6 +254,7 @@ func TestDeleteBoard(t *testing.T) {
 }
 
 func TestDeleteBoardUnauthorized(t *testing.T) {
+	secret := "secret"
 	board := Board{ID: 1, Name: "Board to Delete", UserID: 2}
 	mock := &MockStore{
 		DeleteBoardFunc: func(ctx context.Context, id int) error {
@@ -261,11 +264,11 @@ func TestDeleteBoardUnauthorized(t *testing.T) {
 			return board, nil
 		},
 	}
-	s := &Server{store: mock}
+	s := &Server{secret: secret, store: mock}
 
 	body := `{"id": 1}`
 	req := httptest.NewRequest(http.MethodDelete, "/board/", strings.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+createTestToken(1))
+	req.Header.Set("Authorization", "Bearer "+generateToken(1, secret, 24))
 	rr := httptest.NewRecorder()
 	s.deleteBoard(rr, req)
 

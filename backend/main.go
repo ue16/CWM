@@ -58,8 +58,13 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	secret := os.Getenv("SECRET")
+	if secret == "" {
+		log.Println("SECRET env var not set; falling back to default")
+		secret = "super-secure-hardcoded-secret-for-testing-purposes-only"
+	}
 	addr := fmt.Sprintf(":%s", port)
-	handler := internal.PrepareServer(addr, db)
+	handler := internal.PrepareServer(addr, secret, db)
 
 	log.Printf("starting server on %s", addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {

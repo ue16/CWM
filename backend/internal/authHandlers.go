@@ -5,14 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // login handles user login and returns a token.
 // @Summary Login user
-// @Description Authenticate a user with username and password. Returns a login token that should be used in subsequents requests in the format 'Bearer x:xyz'.
+// @Description Authenticate a user with username and password. Returns a login token that should be used in subsequent requests in the format 'Bearer x:xyz'.
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -47,8 +49,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate token (simple JWT-like token with user ID and expiration)
-	token := generateToken(user.ID)
+	token := generateToken(user.ID, s.secret, s.expiry)
 
 	response := LoginResponse{
 		Token: "Bearer " + token,
@@ -118,12 +119,12 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate token
-	token := generateToken(user.ID)
+	token := generateToken(user.ID, s.secret, s.expiry)
 
 	response := AuthResponse{
 		Success: true,
 		Message: "User created successfully",
-		Token:   token,
+		Token:   "Bearer " + token,
 		User: &User{
 			ID:        user.ID,
 			Username:  user.Username,
@@ -154,13 +155,14 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove "Bearer " prefix if present
-	if len(token) > 7 && token[:7] == "Bearer " {
-		token = token[7:]
+	var err error
+	if token, err = sanitizeAuthString(token); err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusUnauthorized)
+		return
 	}
 
-	userID := verifyToken(token)
-	if userID == 0 {
+	userID := verifyToken(token, s.secret)
+	if userID == -1 {
 		http.Error(w, `{"error":"invalid token"}`, http.StatusUnauthorized)
 		return
 	}
@@ -181,25 +183,49 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Simple token generation and verification (in production, use proper JWT)
-func generateToken(userID int) string {
-	// For this simple implementation, we use a basic format
-	// In production, you should use proper JWT tokens
-	return fmt.Sprintf("%d:%d", userID, time.Now().Add(24*time.Hour).Unix())
+func generateToken(userID int, secret string, expiryHours int) string {
+	claims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiryHours) * time.Hour)),
+		Issuer:    "kanban-app",
+		Subject:   strconv.Itoa(userID),
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
+	if err != nil {
+		return ""
+	}
+	return token
 }
 
-func verifyToken(token string) int {
-	// Parse the simple token format
-	var userID int
-	var expiry int64
-	_, err := fmt.Sscanf(token, "%d:%d", &userID, &expiry)
+func sanitizeAuthString(authString string) (string, error) {
+	if len(authString) > 7 && authString[:7] == "Bearer " {
+		return authString[7:], nil
+	} else {
+		return "", fmt.Errorf("invalid auth string")
+	}
+}
+
+func verifyToken(token, secret string) int {
+	tok, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
+		return []byte(secret), nil
+	})
 	if err != nil {
-		return 0
+		return -1
+	}
+
+	claims, ok := tok.Claims.(*jwt.RegisteredClaims)
+	if !ok || !tok.Valid {
+		return -1
+	}
+
+	userID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		return -1
 	}
 
 	// Check if token has expired
-	if time.Now().Unix() > expiry {
-		return 0
+	if time.Now().Unix() > claims.ExpiresAt.Unix() {
+		return -1
 	}
 
 	return userID
@@ -207,18 +233,18 @@ func verifyToken(token string) int {
 
 // getUserIDFromAuthToken extracts and verifies the user ID from the Authorization header
 // This should be used in all protected routes to ensure user authentication
-func getUserIDFromAuthToken(r *http.Request) (int, error) {
+func (s *Server) getUserIDFromAuthToken(r *http.Request) (int, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		return 0, fmt.Errorf("missing authorization token")
 	}
 
-	// Remove "Bearer " prefix if present
-	if len(token) > 7 && token[:7] == "Bearer " {
-		token = token[7:]
+	var err error
+	if token, err = sanitizeAuthString(token); err != nil {
+		return 0, fmt.Errorf("invalid auth string")
 	}
 
-	userID := verifyToken(token)
+	userID := verifyToken(token, s.secret)
 	if userID == 0 {
 		return 0, fmt.Errorf("invalid or expired token")
 	}

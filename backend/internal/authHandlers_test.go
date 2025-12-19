@@ -259,6 +259,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
+	secret := "secret"
 	user := User{
 		ID:        1,
 		Username:  "testuser",
@@ -266,7 +267,7 @@ func TestVerify(t *testing.T) {
 		CreatedAt: time.Now(),
 	}
 
-	validToken := generateToken(user.ID)
+	validToken := generateToken(user.ID, secret, 24)
 
 	tests := []struct {
 		name          string
@@ -278,14 +279,14 @@ func TestVerify(t *testing.T) {
 	}{
 		{
 			name:         "valid token",
-			token:        validToken,
+			token:        "Bearer " + validToken,
 			userFound:    true,
 			expectStatus: http.StatusOK,
 			expectUser:   true,
 		},
 		{
 			name:          "invalid token format",
-			token:         "invalid-token",
+			token:         "Bearer invalid-token",
 			userFound:     false,
 			expectStatus:  http.StatusUnauthorized,
 			expectUser:    false,
@@ -293,7 +294,7 @@ func TestVerify(t *testing.T) {
 		},
 		{
 			name:          "expired token",
-			token:         "1:0", // userID 1, expiry 0 (expired)
+			token:         "Bearer " + generateToken(1, secret, -1),
 			userFound:     false,
 			expectStatus:  http.StatusUnauthorized,
 			expectUser:    false,
@@ -308,15 +309,8 @@ func TestVerify(t *testing.T) {
 			expectMessage: "token required",
 		},
 		{
-			name:         "bearer token",
-			token:        "Bearer " + validToken,
-			userFound:    true,
-			expectStatus: http.StatusOK,
-			expectUser:   true,
-		},
-		{
 			name:          "user not found with valid token",
-			token:         validToken,
+			token:         "Bearer " + validToken,
 			userFound:     false,
 			expectStatus:  http.StatusUnauthorized,
 			expectUser:    false,
@@ -334,7 +328,7 @@ func TestVerify(t *testing.T) {
 					return User{}, errors.New("user not found")
 				},
 			}
-			s := &Server{store: mock}
+			s := &Server{secret: secret, store: mock}
 
 			req := httptest.NewRequest(http.MethodGet, "/auth/verify", nil)
 			if tt.token != "" {
@@ -376,17 +370,18 @@ func TestVerify(t *testing.T) {
 
 func TestGenerateAndVerifyToken(t *testing.T) {
 	userID := 42
-	token := generateToken(userID)
+	secret := "very-secret"
+	token := generateToken(userID, secret, 24)
 
 	// Verify the token can be decoded
-	decodedID := verifyToken(token)
+	decodedID := verifyToken(token, secret)
 	if decodedID != userID {
 		t.Fatalf("expected userID %d, got %d", userID, decodedID)
 	}
 
 	// Verify invalid token returns 0
 	invalidToken := "not-a-token"
-	if id := verifyToken(invalidToken); id != 0 {
-		t.Fatalf("expected 0 for invalid token, got %d", id)
+	if id := verifyToken(invalidToken, secret); id != -1 {
+		t.Fatalf("expected -1 for invalid token, got %d", id)
 	}
 }
