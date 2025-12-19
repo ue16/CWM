@@ -1,26 +1,46 @@
-services:
-  backend:
-    build:
-      context: ./backend/
-      target: aio
-    ports:
-      - "8082:80"
-    env_file: ./backend/.env
-    networks:
-      - private
-      - public
-    depends_on:
-      - database
+x-microservice-base: &base
+  env_file: ./backend/.env
+  networks:
+    - private
+  depends_on:
+    - database
 
+services:
   auth:
+    <<: *base
     build:
       context: ./backend/
       target: auth
-    env_file: ./backend/.env
-    networks:
-      - private
-    depends_on:
-      - database
+
+  board:
+    <<: *base
+    build:
+      context: ./backend/
+      target: board
+
+  card:
+    <<: *base
+    build:
+      context: ./backend/
+      target: card
+
+  column:
+    <<: *base
+    build:
+      context: ./backend/
+      target: column
+
+  docs:
+    <<: *base
+    build:
+      context: ./backend/
+      target: docs
+
+  overview:
+    <<: *base
+    build:
+      context: ./backend/
+      target: overview
 
   frontend:
     build: ./frontend/

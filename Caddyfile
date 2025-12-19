@@ -1,6 +1,9 @@
 :80 {
 	reverse_proxy /api/v2/auth/* auth:80
-	reverse_proxy /api/* backend:80
-	reverse_proxy /swagger/* backend:80
+	reverse_proxy /api/v2/boards overview:80
+	reverse_proxy /api/v2/board/* board:80
+	reverse_proxy /api/v2/card/* card:80
+	reverse_proxy /api/v2/column/* column:80
+	reverse_proxy /swagger/* docs:80
 	reverse_proxy frontend:80
 }

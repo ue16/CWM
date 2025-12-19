@@ -29,3 +29,53 @@ COPY --from=builder /workspace/bin/auth /app/auth
 EXPOSE 80
 
 CMD ["/app/auth"]
+
+
+FROM alpine:latest AS board
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/board /app/board
+
+EXPOSE 80
+
+CMD ["/app/board"]
+
+
+FROM alpine:latest AS card
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/card /app/card
+
+EXPOSE 80
+
+CMD ["/app/card"]
+
+
+FROM alpine:latest AS column
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/column /app/column
+
+EXPOSE 80
+
+CMD ["/app/column"]
+
+
+FROM alpine:latest AS docs
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/docs /app/docs
+
+EXPOSE 80
+
+CMD ["/app/docs"]
+
+
+FROM alpine:latest AS overview
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/overview /app/overview
+
+EXPOSE 80
+
+CMD ["/app/overview"]
