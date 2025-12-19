@@ -64,7 +64,7 @@ func main() {
 		secret = "super-secure-hardcoded-secret-for-testing-purposes-only"
 	}
 	addr := fmt.Sprintf(":%s", port)
-	handler := internal.PrepareServer(addr, secret, db)
+	handler := internal.BasicServer(addr, secret, db).Docs().Auth().Overview().Board().Column().Card().Finalize()
 
 	log.Printf("starting server on %s", addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log"
 	"net/http"
 	"time"
 
@@ -10,66 +11,119 @@ import (
 )
 
 type Server struct {
-	addr   string
-	store  Store
-	secret string
-	expiry int
+	addr      string
+	store     Store
+	secret    string
+	expiry    int
+	router    *chi.Mux
+	finalized bool
 }
 
-// Prepare creates and returns an http.Handler that renders simple Kanban pages using Go html/templates.
-//
-// Note: the function keeps the same parameters so existing call sites don't need to change,
-// but it returns an http.Handler instead of starting the server. The caller can then
-// start the server (e.g. http.ListenAndServe) or use the handler for testing.
-func PrepareServer(addr, secret string, store Store) http.Handler {
+// Prepare creates and returns a basic server without any functional routes.
+// It needs to be set up with the correct routes through the
+func BasicServer(addr, secret string, store Store) *Server {
 	s := &Server{
 		addr,
 		store,
 		secret,
 		24,
+		chi.NewRouter(),
+		false,
 	}
-	r := chi.NewRouter()
 
 	// A good base middleware stack
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	s.router.Use(middleware.RequestID)
+	s.router.Use(middleware.RealIP)
+	s.router.Use(middleware.Logger)
+	s.router.Use(middleware.Recoverer)
 
 	// Cancels the request on timeout
-	r.Use(middleware.Timeout(60 * time.Second))
+	s.router.Use(middleware.Timeout(60 * time.Second))
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	s.router.Get("/api/v2/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("up"))
 	})
 
-	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
-	r.Route("/api/v2", func(r chi.Router) {
-		// Public auth routes
-		r.Post("/auth/login", s.login)
-		r.Post("/auth/register", s.register)
-		r.Get("/auth/verify", s.verify)
+	return s
+}
 
-		// Protected routes - boards
-		r.Get("/boards", s.listBoards)
-		r.Get("/board/{boardId}", s.getBoard)
-		r.Post("/board/", s.createBoard)
-		r.Put("/board/", s.updateBoard)
-		r.Delete("/board/", s.deleteBoard)
+func (s *Server) Docs() *Server {
+	if !s.finalized {
+		s.router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
 
-		// Column actions
-		r.Get("/column/{boardId}", s.getColumns)
-		r.Post("/column/", s.createColumn)
-		r.Put("/column/", s.updateColumn)
-		r.Delete("/column/", s.deleteColumn)
+func (s *Server) Auth() *Server {
+	if !s.finalized {
+		s.router.Route("/api/v2/auth", func(r chi.Router) {
+			r.Post("/login", s.login)
+			r.Post("/register", s.register)
+			r.Get("/verify", s.verify)
+		})
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
 
-		// Card actions
-		r.Get("/card/{columnId}", s.getCards)
-		r.Post("/card/", s.createCard)
-		r.Put("/card/", s.updateCard)
-		r.Delete("/card/", s.deleteCard)
-	})
+func (s *Server) Overview() *Server {
+	if !s.finalized {
+		s.router.Get("/api/v2/boards", s.listBoards)
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
 
-	// Return the configured handler for the caller to use (start server or test).
-	return r
+func (s *Server) Board() *Server {
+	if !s.finalized {
+		s.router.Route("/api/v2/board", func(r chi.Router) {
+			r.Get("/{boardId}", s.getBoard)
+			r.Post("/", s.createBoard)
+			r.Put("/", s.updateBoard)
+			r.Delete("/", s.deleteBoard)
+		})
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
+
+func (s *Server) Column() *Server {
+	if !s.finalized {
+		s.router.Route("/api/v2/column", func(r chi.Router) {
+			r.Get("/{boardId}", s.getColumns)
+			r.Post("/", s.createColumn)
+			r.Put("/", s.updateColumn)
+			r.Delete("/", s.deleteColumn)
+		})
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
+
+func (s *Server) Card() *Server {
+	if !s.finalized {
+		s.router.Route("/api/v2/card", func(r chi.Router) {
+			r.Get("/{columnId}", s.getCards)
+			r.Post("/", s.createCard)
+			r.Put("/", s.updateCard)
+			r.Delete("/", s.deleteCard)
+		})
+	} else {
+		log.Fatal("Server is already finalized")
+	}
+	return s
+}
+
+// Finalize sets the server as finalized and returns the configured handler for
+// use in a ListenAndServe call.
+// No further routes can be added after this.
+func (s *Server) Finalize() http.Handler {
+	s.finalized = true
+	return s.router
 }
