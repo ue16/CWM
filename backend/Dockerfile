@@ -8,14 +8,24 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 COPY ./ ./
-RUN swag init && go build -o /server .
+RUN swag init && mkdir -p bin/ && go build -o bin/ ./...
 
 
-FROM alpine:latest
+FROM alpine:latest AS aio
 
 WORKDIR /app
-COPY --from=builder /server /app/server
+COPY --from=builder /workspace/bin/cwm25 /app/server
 
 EXPOSE 80
 
 CMD ["/app/server"]
+
+
+FROM alpine:latest AS auth
+
+WORKDIR /app
+COPY --from=builder /workspace/bin/auth /app/auth
+
+EXPOSE 80
+
+CMD ["/app/auth"]

@@ -4,3 +4,4 @@ dist/
 coverage.*
 
 /backend/server
+/backend/bin/*

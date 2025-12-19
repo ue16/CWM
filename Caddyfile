@@ -1,4 +1,5 @@
 :80 {
+	reverse_proxy /api/v2/auth/* auth:80
 	reverse_proxy /api/* backend:80
 	reverse_proxy /swagger/* backend:80
 	reverse_proxy frontend:80
