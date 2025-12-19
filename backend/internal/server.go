@@ -47,6 +47,7 @@ func BasicServer(addr, secret string, store Store) *Server {
 	return s
 }
 
+// Docs registers the swagger route.
 func (s *Server) Docs() *Server {
 	if !s.finalized {
 		s.router.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("/swagger/doc.json")))
@@ -56,6 +57,7 @@ func (s *Server) Docs() *Server {
 	return s
 }
 
+// Auth registers the auth routes.
 func (s *Server) Auth() *Server {
 	if !s.finalized {
 		s.router.Route("/api/v2/auth", func(r chi.Router) {
@@ -69,6 +71,7 @@ func (s *Server) Auth() *Server {
 	return s
 }
 
+// Overview registers the overview routes.
 func (s *Server) Overview() *Server {
 	if !s.finalized {
 		s.router.Get("/api/v2/boards", s.listBoards)
@@ -78,6 +81,7 @@ func (s *Server) Overview() *Server {
 	return s
 }
 
+// Board registers the board routes.
 func (s *Server) Board() *Server {
 	if !s.finalized {
 		s.router.Route("/api/v2/board", func(r chi.Router) {
@@ -92,6 +96,7 @@ func (s *Server) Board() *Server {
 	return s
 }
 
+// Column registers the column routes.
 func (s *Server) Column() *Server {
 	if !s.finalized {
 		s.router.Route("/api/v2/column", func(r chi.Router) {
@@ -106,6 +111,7 @@ func (s *Server) Column() *Server {
 	return s
 }
 
+// Card registers the card routes.
 func (s *Server) Card() *Server {
 	if !s.finalized {
 		s.router.Route("/api/v2/card", func(r chi.Router) {

@@ -11,7 +11,7 @@ import (
 )
 
 //	@title			CWM Kanban
-//	@version		0.2
+//	@version		0.3
 //	@description	This is a small kanban server.
 //	@termsOfService	http://swagger.io/terms/
 

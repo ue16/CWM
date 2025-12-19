@@ -1,3 +1,6 @@
+# This is a "snippet". We can use this later on.
+# The args allow us to provide some parameters when importing the snippet.
+# "{args[0]}" is the URL, "{args[1]}" is the name of the backend.
 (scalable) {
 	reverse_proxy {args[0]} {
 		dynamic a {args[1]} 80
@@ -9,7 +12,7 @@
 		dynamic a auth 80
 	}
 
-	# These are equivalent to the block above
+	# These are equivalent to the block above. The snippet is simply copied by the caddy server and replaces the import.
 	import scalable /api/v2/boards overview
 	import scalable /api/v2/board/* board
 	import scalable /api/v2/card/* card

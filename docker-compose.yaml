@@ -1,3 +1,6 @@
+# This is a YAML anchor. We can use it later on so we don;t have to repeat the
+# same configuration all the time.
+# Things starting with 'x-' are ignored by compose.
 x-microservice-base: &base
   env_file: ./backend/.env
   networks:
@@ -7,7 +10,7 @@ x-microservice-base: &base
 
 services:
   auth:
-    <<: *base
+    <<: *base # Here we use the anchor to include the env, network and depends.
     build:
       context: ./backend/
       target: auth

@@ -197,6 +197,8 @@ func generateToken(userID int, secret string, expiryHours int) string {
 	return token
 }
 
+// sanitizeAuthString checks whether the given string is a Bearer token and
+// removes the prefix. If it does not start with "Bearer ", it returns an error.
 func sanitizeAuthString(authString string) (string, error) {
 	if len(authString) > 7 && authString[:7] == "Bearer " {
 		return authString[7:], nil
@@ -206,6 +208,7 @@ func sanitizeAuthString(authString string) (string, error) {
 }
 
 func verifyToken(token, secret string) int {
+	// Just use a standard claim, we don't need custom fields.
 	tok, err := jwt.ParseWithClaims(token, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
 		return []byte(secret), nil
 	})

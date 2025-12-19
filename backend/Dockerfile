@@ -8,9 +8,11 @@ COPY ./go.mod ./go.sum ./
 RUN go mod download
 
 COPY ./ ./
+# The "./..." tells go to build every file that has a main function.
 RUN swag init && mkdir -p bin/ && go build -o bin/ ./...
+# We can then copy the different binary files into indivdual containers below.
 
-
+# All-in-one image; for testing purposes
 FROM alpine:latest AS aio
 
 WORKDIR /app
