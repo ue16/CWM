@@ -1,3 +1,5 @@
+version: 2
+
 gitlab_urls:
   api: https://git.uni-due.de/api/v4/
   download: https://git.uni-due.de
