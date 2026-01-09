@@ -84,6 +84,16 @@ services:
       - private
       - public
 
+  filestore:
+    image: scireum/s3-ninja:latest
+    ports:
+      - 9000:9000
+    volumes:
+      - filestore_data:/home/sirius/data
+    networks:
+      - private
+      - public
+
 networks:
   private:
     internal: true
@@ -91,3 +101,4 @@ networks:
 
 volumes:
   postgres_data:
+  filestore_data:
