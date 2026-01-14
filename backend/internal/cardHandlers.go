@@ -39,8 +39,7 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns the board that contains this column
-	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, columnID)
+	owns, err := s.store.CompareColumnOwner(r.Context(), columnID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return
@@ -101,8 +100,7 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns the board that contains this column
-	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, input.ColumnID)
+	owns, err := s.store.CompareColumnOwner(r.Context(), input.ColumnID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return
@@ -126,6 +124,7 @@ func (s *Server) createCard(w http.ResponseWriter, r *http.Request) {
 		Title:       input.Title,
 		Description: input.Description,
 		Position:    position,
+		UserID:      userID,
 	}
 
 	createdCard, err := s.store.CreateCard(r.Context(), card)
@@ -173,8 +172,7 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns the board that contains this card
-	owns, err := isCardBelongsToBoardOwner(r.Context(), s.store, userID, card.ID)
+	owns, err := s.store.CompareCardOwner(r.Context(), card.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "card not found"}`, http.StatusNotFound)
 		return
@@ -195,7 +193,7 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token from login"
-// @Param card body internal.idRequest true "Card id"
+// @Param card body internal.IdRequest true "Card id"
 // @Success 204 "Card deleted successfully"
 // @Failure 400 {object} JSONError "Invalid request body"
 // @Failure 401 {object} JSONError "Invalid auth token"
@@ -211,15 +209,14 @@ func (s *Server) deleteCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req idRequest
+	var req IdRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Check if user owns the board that contains this card
-	owns, err := isCardBelongsToBoardOwner(r.Context(), s.store, userID, req.ID)
+	owns, err := s.store.CompareCardOwner(r.Context(), req.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "card not found"}`, http.StatusNotFound)
 		return

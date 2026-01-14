@@ -31,6 +31,7 @@ type Column struct {
 	BoardID  int    `db:"board_id" json:"board_id"`
 	Name     string `db:"name" json:"name"`
 	Position int    `db:"position" json:"position"`
+	UserID   int    `db:"user_id" json:"user_id"`
 }
 
 // Card represents a task/card inside a column.
@@ -41,6 +42,7 @@ type Card struct {
 	Title       string `db:"title" json:"title"`
 	Description string `db:"description" json:"description"`
 	Position    int    `db:"position" json:"position"`
+	UserID      int    `db:"user_id" json:"user_id"`
 }
 
 // String implements fmt.Stringer for Board.
@@ -67,11 +69,11 @@ func (c Card) String() string {
  * Request/Response structs
  */
 
-type idRequest struct {
+type IdRequest struct {
 	ID int `json:"id"`
 }
 
-type nameRequest struct {
+type NameRequest struct {
 	Name string `json:"name"`
 }
 

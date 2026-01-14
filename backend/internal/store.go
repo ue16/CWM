@@ -17,16 +17,19 @@ type Store interface {
 	GetColumnsByBoardID(ctx context.Context, boardID int) ([]Column, error)
 	GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, error)
 	DeleteBoard(ctx context.Context, id int) error
+	CompareBoardOwner(ctx context.Context, id, user_id int) (bool, error)
 
 	// Column operations
 	CreateColumn(ctx context.Context, c Column) (Column, error)
 	GetColumnByID(ctx context.Context, id int) (Column, error)
 	UpdateColumn(ctx context.Context, c Column) error
 	DeleteColumn(ctx context.Context, id int) error
+	CompareColumnOwner(ctx context.Context, id, user_id int) (bool, error)
 
 	// Card operations
 	CreateCard(ctx context.Context, c Card) (Card, error)
 	GetCardByID(ctx context.Context, id int) (Card, error)
 	UpdateCard(ctx context.Context, c Card) error
 	DeleteCard(ctx context.Context, id int) error
+	CompareCardOwner(ctx context.Context, id, user_id int) (bool, error)
 }

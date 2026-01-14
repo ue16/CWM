@@ -15,8 +15,8 @@ import (
 func TestGetColumns(t *testing.T) {
 	secret := "secret"
 	columns := []Column{
-		{ID: 1, Name: "Column 1", BoardID: 1},
-		{ID: 2, Name: "Column 2", BoardID: 1},
+		{ID: 1, Name: "Column 1", BoardID: 1, UserID: 1},
+		{ID: 2, Name: "Column 2", BoardID: 1, UserID: 1},
 	}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
@@ -25,6 +25,9 @@ func TestGetColumns(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareBoardOwnerFunc: func(ctx context.Context, boardID int, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -60,6 +63,9 @@ func TestGetColumnsUnauthorized(t *testing.T) {
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
+		CompareBoardOwnerFunc: func(ctx context.Context, boardID int, userID int) (bool, error) {
+			return false, nil
+		},
 	}
 	s := &Server{secret: secret, store: mock}
 
@@ -81,7 +87,7 @@ func TestGetColumnsUnauthorized(t *testing.T) {
 
 func TestCreateColumn(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "New Column", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "New Column", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		GetColumnsByBoardIDFunc: func(ctx context.Context, boardID int) ([]Column, error) {
@@ -92,6 +98,9 @@ func TestCreateColumn(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareBoardOwnerFunc: func(ctx context.Context, boardID int, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -128,6 +137,9 @@ func TestCreateColumnUnauthorized(t *testing.T) {
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
+		CompareBoardOwnerFunc: func(ctx context.Context, boardID int, userID int) (bool, error) {
+			return false, nil
+		},
 	}
 	s := &Server{secret: secret, store: mock}
 
@@ -147,7 +159,7 @@ func TestCreateColumnUnauthorized(t *testing.T) {
 
 func TestUpdateColumn(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		UpdateColumnFunc: func(ctx context.Context, c Column) error {
@@ -158,6 +170,9 @@ func TestUpdateColumn(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID int, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -178,7 +193,7 @@ func TestUpdateColumn(t *testing.T) {
 
 func TestUpdateColumnUnauthorized(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Updated Column", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		UpdateColumnFunc: func(ctx context.Context, c Column) error {
@@ -189,6 +204,9 @@ func TestUpdateColumnUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID int, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -209,7 +227,7 @@ func TestUpdateColumnUnauthorized(t *testing.T) {
 
 func TestDeleteColumn(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		DeleteColumnFunc: func(ctx context.Context, id int) error {
@@ -220,6 +238,9 @@ func TestDeleteColumn(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID int, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -240,7 +261,7 @@ func TestDeleteColumn(t *testing.T) {
 
 func TestDeleteColumnUnauthorized(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Column to Delete", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		DeleteColumnFunc: func(ctx context.Context, id int) error {
@@ -251,6 +272,9 @@ func TestDeleteColumnUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID int, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}

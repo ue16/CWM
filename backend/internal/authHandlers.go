@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -253,37 +252,4 @@ func (s *Server) getUserIDFromAuthToken(r *http.Request) (int, error) {
 	}
 
 	return userID, nil
-}
-
-// isBoardOwner checks if the given user owns the specified board
-func isBoardOwner(ctx context.Context, store Store, userID, boardID int) (bool, error) {
-	board, err := store.GetBoardByID(ctx, boardID)
-	if err != nil {
-		return false, err
-	}
-	return board.UserID == userID, nil
-}
-
-// isColumnBelongsToBoardOwner checks if the user owns the board that contains this column
-// This verifies the column belongs to a board owned by the user
-func isColumnBelongsToBoardOwner(ctx context.Context, store Store, userID, columnID int) (bool, error) {
-	column, err := store.GetColumnByID(ctx, columnID)
-	if err != nil {
-		return false, err
-	}
-	return isBoardOwner(ctx, store, userID, column.BoardID)
-}
-
-// isCardBelongsToBoardOwner checks if the user owns the board that contains this card
-// This verifies the card belongs to a column in a board owned by the user
-func isCardBelongsToBoardOwner(ctx context.Context, store Store, userID, cardID int) (bool, error) {
-	card, err := store.GetCardByID(ctx, cardID)
-	if err != nil {
-		return false, err
-	}
-	column, err := store.GetColumnByID(ctx, card.ColumnID)
-	if err != nil {
-		return false, err
-	}
-	return isBoardOwner(ctx, store, userID, column.BoardID)
 }

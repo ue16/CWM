@@ -14,12 +14,13 @@ import (
 
 func TestGetCards(t *testing.T) {
 	secret := "secret"
+	uid := 1
 	cards := []Card{
-		{ID: 1, Title: "Card 1", ColumnID: 1},
-		{ID: 2, Title: "Card 2", ColumnID: 1},
+		{ID: 1, Title: "Card 1", ColumnID: 1, UserID: uid},
+		{ID: 2, Title: "Card 2", ColumnID: 1, UserID: uid},
 	}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
-	board := Board{ID: 1, Name: "Test Board", UserID: 1}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: uid}
+	board := Board{ID: 1, Name: "Test Board", UserID: uid}
 	mock := &MockStore{
 		GetCardsByColumnIDFunc: func(ctx context.Context, columnID int) ([]Card, error) {
 			return cards, nil
@@ -29,6 +30,9 @@ func TestGetCards(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -59,7 +63,7 @@ func TestGetCards(t *testing.T) {
 
 func TestGetCardsUnauthorized(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		GetCardsByColumnIDFunc: func(ctx context.Context, columnID int) ([]Card, error) {
@@ -70,6 +74,9 @@ func TestGetCardsUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -92,8 +99,8 @@ func TestGetCardsUnauthorized(t *testing.T) {
 
 func TestCreateCard(t *testing.T) {
 	secret := "secret"
-	card := Card{ID: 1, Title: "New Card", ColumnID: 1, Position: 1}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	card := Card{ID: 1, Title: "New Card", ColumnID: 1, Position: 1, UserID: 1}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		GetCardsByColumnIDFunc: func(ctx context.Context, columnID int) ([]Card, error) {
@@ -107,6 +114,9 @@ func TestCreateCard(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -132,7 +142,7 @@ func TestCreateCard(t *testing.T) {
 
 func TestCreateCardUnauthorized(t *testing.T) {
 	secret := "secret"
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		GetCardsByColumnIDFunc: func(ctx context.Context, columnID int) ([]Card, error) {
@@ -146,6 +156,9 @@ func TestCreateCardUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -166,8 +179,8 @@ func TestCreateCardUnauthorized(t *testing.T) {
 
 func TestUpdateCard(t *testing.T) {
 	secret := "secret"
-	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1, UserID: 1}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 1}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		UpdateCardFunc: func(ctx context.Context, c Card) error {
@@ -181,6 +194,9 @@ func TestUpdateCard(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareCardOwnerFunc: func(ctx context.Context, cardID, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -201,8 +217,8 @@ func TestUpdateCard(t *testing.T) {
 
 func TestUpdateCardUnauthorized(t *testing.T) {
 	secret := "secret"
-	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	card := Card{ID: 1, Title: "Updated Card", ColumnID: 1, Description: "Updated Description", Position: 1, UserID: 2}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		UpdateCardFunc: func(ctx context.Context, c Card) error {
@@ -216,6 +232,9 @@ func TestUpdateCardUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareCardOwnerFunc: func(ctx context.Context, cardID, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -236,8 +255,8 @@ func TestUpdateCardUnauthorized(t *testing.T) {
 
 func TestDeleteCard(t *testing.T) {
 	secret := "secret"
-	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1, UserID: 2}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 1}
 	mock := &MockStore{
 		DeleteCardFunc: func(ctx context.Context, id int) error {
@@ -251,6 +270,9 @@ func TestDeleteCard(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareCardOwnerFunc: func(ctx context.Context, cardID, userID int) (bool, error) {
+			return true, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -271,8 +293,8 @@ func TestDeleteCard(t *testing.T) {
 
 func TestDeleteCardUnauthorized(t *testing.T) {
 	secret := "secret"
-	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1}
-	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1}
+	card := Card{ID: 1, Title: "Card to Delete", ColumnID: 1, Position: 1, UserID: 2}
+	column := Column{ID: 1, Name: "Test Column", BoardID: 1, Position: 1, UserID: 2}
 	board := Board{ID: 1, Name: "Test Board", UserID: 2}
 	mock := &MockStore{
 		DeleteCardFunc: func(ctx context.Context, id int) error {
@@ -286,6 +308,9 @@ func TestDeleteCardUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareCardOwnerFunc: func(ctx context.Context, cardID, userID int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}

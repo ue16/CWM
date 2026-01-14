@@ -182,6 +182,9 @@ func TestUpdateBoard(t *testing.T) {
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
+		CompareBoardOwnerFunc: func(ctx context.Context, bid, uid int) (bool, error) {
+			return true, nil
+		},
 	}
 	s := &Server{secret: secret, store: mock}
 
@@ -208,6 +211,9 @@ func TestUpdateBoardUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareBoardOwnerFunc: func(ctx context.Context, bid, uid int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}
@@ -236,6 +242,9 @@ func TestDeleteBoard(t *testing.T) {
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
 		},
+		CompareBoardOwnerFunc: func(ctx context.Context, bid, uid int) (bool, error) {
+			return true, nil
+		},
 	}
 	s := &Server{secret: secret, store: mock}
 
@@ -262,6 +271,9 @@ func TestDeleteBoardUnauthorized(t *testing.T) {
 		},
 		GetBoardByIDFunc: func(ctx context.Context, id int) (Board, error) {
 			return board, nil
+		},
+		CompareBoardOwnerFunc: func(ctx context.Context, bid, uid int) (bool, error) {
+			return false, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}

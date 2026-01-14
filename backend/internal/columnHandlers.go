@@ -42,8 +42,7 @@ func (s *Server) getColumns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns this board
-	owns, err := isBoardOwner(r.Context(), s.store, userID, boardID)
+	owns, err := s.store.CompareBoardOwner(r.Context(), boardID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
@@ -103,8 +102,7 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns this board
-	owns, err := isBoardOwner(r.Context(), s.store, userID, input.BoardID)
+	owns, err := s.store.CompareBoardOwner(r.Context(), input.BoardID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
@@ -127,6 +125,7 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 		BoardID:  input.BoardID,
 		Name:     input.Name,
 		Position: position,
+		UserID:   userID,
 	}
 
 	createdColumn, err := s.store.CreateColumn(r.Context(), column)
@@ -174,8 +173,7 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns the board that contains this column
-	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, column.ID)
+	owns, err := s.store.CompareColumnOwner(r.Context(), column.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, "{\"error\": \"column not found\"}", http.StatusNotFound)
 		return
@@ -196,7 +194,7 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token from login"
-// @Param input body internal.idRequest true "Column ID"
+// @Param input body internal.IdRequest true "Column ID"
 // @Success 204 "Column deleted successfully"
 // @Failure 400 {object} JSONError "Invalid request body"
 // @Failure 401 {object} JSONError "Invalid auth token"
@@ -212,15 +210,14 @@ func (s *Server) deleteColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req idRequest
+	var req IdRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Check if user owns the board that contains this column
-	owns, err := isColumnBelongsToBoardOwner(r.Context(), s.store, userID, req.ID)
+	owns, err := s.store.CompareColumnOwner(r.Context(), req.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "column not found"}`, http.StatusNotFound)
 		return

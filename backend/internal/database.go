@@ -211,6 +211,17 @@ func (db *DB) DeleteBoard(ctx context.Context, id int) error {
 	return nil
 }
 
+// CompareBoardOwner compares the owner of a board with a given user ID. Returns true if the owner matches the user ID.
+func (db *DB) CompareBoardOwner(ctx context.Context, id, user_id int) (bool, error) {
+	var owner int
+	row := db.pool.QueryRow(ctx, `SELECT user_id FROM boards WHERE id = $1`, id)
+	err := row.Scan(&owner)
+	if err != nil {
+		return false, fmt.Errorf("CompareBoardOwner: %w", err)
+	}
+	return owner == user_id, nil
+}
+
 //
 // Columns
 //
@@ -219,8 +230,8 @@ func (db *DB) DeleteBoard(ctx context.Context, id int) error {
 func (db *DB) CreateColumn(ctx context.Context, c Column) (Column, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
-		`INSERT INTO columns (board_id, name, position) VALUES ($1, $2, $3) RETURNING id`,
-		c.BoardID, c.Name, c.Position,
+		`INSERT INTO columns (board_id, name, position, user_id) VALUES ($1, $2, $3, $4) RETURNING id`,
+		c.BoardID, c.Name, c.Position, c.UserID,
 	).Scan(&id)
 	if err != nil {
 		return Column{}, fmt.Errorf("CreateColumn: %w", err)
@@ -295,6 +306,17 @@ func (db *DB) DeleteColumn(ctx context.Context, id int) error {
 	return nil
 }
 
+// CompareColumnOwner compares the owner of a column with a given user ID. Returns true if the owner matches the user ID.
+func (db *DB) CompareColumnOwner(ctx context.Context, id, user_id int) (bool, error) {
+	var owner int
+	row := db.pool.QueryRow(ctx, `SELECT user_id FROM columns WHERE id = $1`, id)
+	err := row.Scan(&owner)
+	if err != nil {
+		return false, fmt.Errorf("CompareColumnOwner: %w", err)
+	}
+	return owner == user_id, nil
+}
+
 //
 // Cards
 //
@@ -303,8 +325,8 @@ func (db *DB) DeleteColumn(ctx context.Context, id int) error {
 func (db *DB) CreateCard(ctx context.Context, c Card) (Card, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
-		`INSERT INTO cards (column_id, title, description, position) VALUES ($1, $2, $3, $4) RETURNING id`,
-		c.ColumnID, c.Title, c.Description, c.Position,
+		`INSERT INTO cards (column_id, title, description, position, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+		c.ColumnID, c.Title, c.Description, c.Position, c.UserID,
 	).Scan(&id)
 	if err != nil {
 		return Card{}, fmt.Errorf("CreateCard: %w", err)
@@ -378,4 +400,15 @@ func (db *DB) DeleteCard(ctx context.Context, id int) error {
 		return fmt.Errorf("DeleteCard: not found")
 	}
 	return nil
+}
+
+// CompareCardOwner compares the owner of a card with a given user ID. Returns true if the owner matches the user ID.
+func (db *DB) CompareCardOwner(ctx context.Context, id, user_id int) (bool, error) {
+	var owner int
+	row := db.pool.QueryRow(ctx, `SELECT user_id FROM cards WHERE id = $1`, id)
+	err := row.Scan(&owner)
+	if err != nil {
+		return false, fmt.Errorf("CompareCardOwner: %w", err)
+	}
+	return owner == user_id, nil
 }

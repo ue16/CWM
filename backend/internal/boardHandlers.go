@@ -80,16 +80,9 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns this board
-	owns, err := isBoardOwner(r.Context(), s.store, userID, boardID)
-	if err != nil || !owns {
-		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
-		return
-	}
-
-	// Fetch the board from the database
+	// Fetch the board from the database and check ownership
 	board, err := s.store.GetBoardByID(r.Context(), boardID)
-	if err != nil {
+	if err != nil || board.UserID != userID {
 		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
 	}
@@ -134,8 +127,7 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user owns this board
-	owns, err := isBoardOwner(r.Context(), s.store, userID, board.ID)
+	owns, err := s.store.CompareBoardOwner(r.Context(), board.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return
@@ -157,7 +149,7 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param Authorization header string true "Bearer token from login"
 // @Param User-ID header string true "User ID"
-// @Param input body internal.nameRequest true "Board creation request"
+// @Param input body internal.NameRequest true "Board creation request"
 // @Success 201 {object} Board "Created board"
 // @Failure 400 {object} JSONError "Invalid input or missing name"
 // @Failure 401 {object} JSONError "Invalid auth token"
@@ -172,7 +164,7 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input nameRequest
+	var input NameRequest
 
 	// Decode the JSON body
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -206,7 +198,7 @@ func (s *Server) createBoard(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "Bearer token from login"
-// @Param board body internal.idRequest true "Board id"
+// @Param board body internal.IdRequest true "Board id"
 // @Success 204 "Board deleted successfully"
 // @Failure 400 {object} JSONError "Invalid request body"
 // @Failure 401 {object} JSONError "Invalid auth token"
@@ -222,15 +214,14 @@ func (s *Server) deleteBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req idRequest
+	var req IdRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, `{"error": "invalid request body"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Check if user owns this board
-	owns, err := isBoardOwner(r.Context(), s.store, userID, req.ID)
+	owns, err := s.store.CompareBoardOwner(r.Context(), req.ID, userID)
 	if err != nil || !owns {
 		http.Error(w, `{"error": "board not found"}`, http.StatusNotFound)
 		return

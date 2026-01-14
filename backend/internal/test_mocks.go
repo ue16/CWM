@@ -18,18 +18,21 @@ type MockStore struct {
 	GetColumnsByBoardIDFunc func(ctx context.Context, boardID int) ([]Column, error)
 	GetCardsByColumnIDFunc  func(ctx context.Context, columnID int) ([]Card, error)
 	DeleteBoardFunc         func(ctx context.Context, id int) error
+	CompareBoardOwnerFunc   func(ctx context.Context, id, user_id int) (bool, error)
 
 	// Column operations
-	GetColumnByIDFunc func(ctx context.Context, id int) (Column, error)
-	CreateColumnFunc  func(ctx context.Context, c Column) (Column, error)
-	UpdateColumnFunc  func(ctx context.Context, c Column) error
-	DeleteColumnFunc  func(ctx context.Context, id int) error
+	GetColumnByIDFunc      func(ctx context.Context, id int) (Column, error)
+	CreateColumnFunc       func(ctx context.Context, c Column) (Column, error)
+	UpdateColumnFunc       func(ctx context.Context, c Column) error
+	DeleteColumnFunc       func(ctx context.Context, id int) error
+	CompareColumnOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
 
 	// Card operations
-	GetCardByIDFunc func(ctx context.Context, id int) (Card, error)
-	CreateCardFunc  func(ctx context.Context, c Card) (Card, error)
-	UpdateCardFunc  func(ctx context.Context, c Card) error
-	DeleteCardFunc  func(ctx context.Context, id int) error
+	GetCardByIDFunc      func(ctx context.Context, id int) (Card, error)
+	CreateCardFunc       func(ctx context.Context, c Card) (Card, error)
+	UpdateCardFunc       func(ctx context.Context, c Card) error
+	DeleteCardFunc       func(ctx context.Context, id int) error
+	CompareCardOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
 }
 
 func (m *MockStore) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
@@ -62,6 +65,9 @@ func (m *MockStore) GetColumnsByBoardID(ctx context.Context, boardID int) ([]Col
 func (m *MockStore) GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, error) {
 	return m.GetCardsByColumnIDFunc(ctx, columnID)
 }
+func (m *MockStore) CompareBoardOwner(ctx context.Context, id, user_id int) (bool, error) {
+	return m.CompareBoardOwnerFunc(ctx, id, user_id)
+}
 func (m *MockStore) GetColumnByID(ctx context.Context, id int) (Column, error) {
 	return m.GetColumnByIDFunc(ctx, id)
 }
@@ -80,11 +86,17 @@ func (m *MockStore) UpdateColumn(ctx context.Context, c Column) error {
 func (m *MockStore) DeleteColumn(ctx context.Context, id int) error {
 	return m.DeleteColumnFunc(ctx, id)
 }
+func (m *MockStore) CompareColumnOwner(ctx context.Context, id, user_id int) (bool, error) {
+	return m.CompareColumnOwnerFunc(ctx, id, user_id)
+}
 func (m *MockStore) CreateCard(ctx context.Context, c Card) (Card, error) {
 	return m.CreateCardFunc(ctx, c)
 }
 func (m *MockStore) DeleteCard(ctx context.Context, id int) error {
 	return m.DeleteCardFunc(ctx, id)
+}
+func (m *MockStore) CompareCardOwner(ctx context.Context, id, user_id int) (bool, error) {
+	return m.CompareCardOwnerFunc(ctx, id, user_id)
 }
 func (m *MockStore) DeleteBoard(ctx context.Context, id int) error {
 	return m.DeleteBoardFunc(ctx, id)

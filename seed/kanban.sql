@@ -1,6 +1,7 @@
 -- Kanban Seed File
 
 -- Drop tables if they exist (for repeatable runs)
+DROP TABLE IF EXISTS attachments;
 DROP TABLE IF EXISTS cards;
 DROP TABLE IF EXISTS columns;
 DROP TABLE IF EXISTS boards;
@@ -27,7 +28,8 @@ CREATE TABLE columns (
     id SERIAL PRIMARY KEY,
     board_id INTEGER REFERENCES boards(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create Cards table
@@ -36,7 +38,8 @@ CREATE TABLE cards (
     column_id INTEGER REFERENCES columns(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Insert sample user (password: password123)
@@ -46,11 +49,11 @@ INSERT INTO users (email, password_hash, username) VALUES ('user@example.com', '
 INSERT INTO boards (name, user_id) VALUES ('Project Alpha', 1);
 
 -- Insert sample columns for the board
-INSERT INTO columns (board_id, name, position) VALUES (1, 'To Do', 1);
-INSERT INTO columns (board_id, name, position) VALUES (1, 'In Progress', 2);
-INSERT INTO columns (board_id, name, position) VALUES (1, 'Done', 3);
+INSERT INTO columns (board_id, name, position, user_id) VALUES (1, 'To Do', 1, 1);
+INSERT INTO columns (board_id, name, position, user_id) VALUES (1, 'In Progress', 2, 1);
+INSERT INTO columns (board_id, name, position, user_id) VALUES (1, 'Done', 3, 1);
 
 -- Insert sample cards
-INSERT INTO cards (column_id, title, description, position) VALUES (1, 'Set up project', 'Initialize repository and dependencies', 1);
-INSERT INTO cards (column_id, title, description, position) VALUES (2, 'Develop feature X', 'Implement the main feature', 1);
-INSERT INTO cards (column_id, title, description, position) VALUES (3, 'Deploy to production', 'Release the app', 1);
+INSERT INTO cards (column_id, title, description, position, user_id) VALUES (1, 'Set up project', 'Initialize repository and dependencies', 1, 1);
+INSERT INTO cards (column_id, title, description, position, user_id) VALUES (2, 'Develop feature X', 'Implement the main feature', 1, 1);
+INSERT INTO cards (column_id, title, description, position, user_id) VALUES (3, 'Deploy to production', 'Release the app', 1, 1);
