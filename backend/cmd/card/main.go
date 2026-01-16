@@ -22,6 +22,8 @@ func main() {
 	}
 	defer db.Close()
 
+	s3Client := internal.NewS3ClientFromEnv()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -32,7 +34,7 @@ func main() {
 		secret = "super-secure-hardcoded-secret-for-testing-purposes-only"
 	}
 	addr := fmt.Sprintf(":%s", port)
-	handler := internal.BasicServer(addr, secret, db).Card().Finalize()
+	handler := internal.BasicServer(addr, secret, db).S3Client(s3Client).Card().Finalize()
 
 	log.Printf("starting server on %s", addr)
 	if err := http.ListenAndServe(addr, handler); err != nil {

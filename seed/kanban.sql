@@ -39,6 +39,19 @@ CREATE TABLE cards (
     title TEXT NOT NULL,
     description TEXT,
     position INTEGER NOT NULL,
+    attachments INTEGER ARRAY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create Attachments table
+CREATE TABLE attachments (
+    id SERIAL PRIMARY KEY,
+    card_id INTEGER REFERENCES cards(id) ON DELETE CASCADE,
+    filename TEXT NOT NULL,
+    size INTEGER,
+    type TEXT,
+    object_id TEXT NOT NULL,
+    upload_done BOOLEAN NOT NULL DEFAULT FALSE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 

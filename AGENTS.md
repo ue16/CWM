@@ -7,6 +7,7 @@ It is hosted using a Caddy container.
 
 The backend is written in Go and resides in the backend/ folder.
 It uses Postgres as database and is split into microservices.
+Object storage is hosted with a local S3-compatible container (called "filestore").
 It is hosted in custom Docker containers.
 We use Swagger/OpenAPI documentation that is generated automatically.
 

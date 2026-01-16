@@ -33,6 +33,13 @@ type MockStore struct {
 	UpdateCardFunc       func(ctx context.Context, c Card) error
 	DeleteCardFunc       func(ctx context.Context, id int) error
 	CompareCardOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
+
+	// Attachment operations
+	CreateAttachmentFunc       func(ctx context.Context, a Attachment) (Attachment, error)
+	GetAttachmentByIDFunc      func(ctx context.Context, id int) (Attachment, error)
+	UpdateAttachmentFunc       func(ctx context.Context, a Attachment) error
+	DeleteAttachmentFunc       func(ctx context.Context, id int) error
+	CompareAttachmentOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
 }
 
 func (m *MockStore) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
@@ -100,4 +107,19 @@ func (m *MockStore) CompareCardOwner(ctx context.Context, id, user_id int) (bool
 }
 func (m *MockStore) DeleteBoard(ctx context.Context, id int) error {
 	return m.DeleteBoardFunc(ctx, id)
+}
+func (m *MockStore) CreateAttachment(ctx context.Context, a Attachment) (Attachment, error) {
+	return m.CreateAttachmentFunc(ctx, a)
+}
+func (m *MockStore) GetAttachmentByID(ctx context.Context, id int) (Attachment, error) {
+	return m.GetAttachmentByIDFunc(ctx, id)
+}
+func (m *MockStore) UpdateAttachment(ctx context.Context, a Attachment) error {
+	return m.UpdateAttachmentFunc(ctx, a)
+}
+func (m *MockStore) DeleteAttachment(ctx context.Context, id int) error {
+	return m.DeleteAttachmentFunc(ctx, id)
+}
+func (m *MockStore) CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error) {
+	return m.CompareAttachmentOwnerFunc(ctx, id, user_id)
 }

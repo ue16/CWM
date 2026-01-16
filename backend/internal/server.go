@@ -7,16 +7,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rhnvrm/simples3"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Server struct {
-	addr      string
-	store     Store
-	secret    string
-	expiry    int
-	router    *chi.Mux
-	finalized bool
+	addr        string
+	store       Store
+	secret      string
+	expiry      int
+	router      *chi.Mux
+	finalized   bool
+	s3Client    *simples3.S3
+	s3ClientAlt *simples3.S3
 }
 
 // Prepare creates and returns a basic server without any functional routes.
@@ -29,6 +32,8 @@ func BasicServer(addr, secret string, store Store) *Server {
 		24,
 		chi.NewRouter(),
 		false,
+		nil,
+		nil,
 	}
 
 	// A good base middleware stack
@@ -44,6 +49,12 @@ func BasicServer(addr, secret string, store Store) *Server {
 		w.Write([]byte("up"))
 	})
 
+	return s
+}
+
+func (s *Server) S3Client(client *simples3.S3) *Server {
+	s.s3Client = client
+	s.s3ClientAlt = S3ClientWithAlternateEndpoint(client)
 	return s
 }
 
@@ -119,6 +130,15 @@ func (s *Server) Card() *Server {
 			r.Post("/", s.createCard)
 			r.Put("/", s.updateCard)
 			r.Delete("/", s.deleteCard)
+
+			if s.s3Client != nil {
+				log.Println("S3 client is configured, adding the attachment routes")
+				r.Route("/{cardId}/attachment", func(r chi.Router) {
+					r.Put("/prepare", s.prepareAttachment)
+					r.Put("/{attachmentId}/finalize", s.finalizeAttachment)
+					r.Delete("/{attachmentId}", s.deleteAttachment)
+				})
+			}
 		})
 	} else {
 		log.Fatal("Server is already finalized")

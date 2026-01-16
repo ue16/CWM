@@ -32,4 +32,11 @@ type Store interface {
 	UpdateCard(ctx context.Context, c Card) error
 	DeleteCard(ctx context.Context, id int) error
 	CompareCardOwner(ctx context.Context, id, user_id int) (bool, error)
+
+	// Attachment operations
+	CreateAttachment(ctx context.Context, a Attachment) (Attachment, error)
+	GetAttachmentByID(ctx context.Context, id int) (Attachment, error)
+	UpdateAttachment(ctx context.Context, a Attachment) error
+	DeleteAttachment(ctx context.Context, id int) error
+	CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error)
 }

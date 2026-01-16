@@ -36,13 +36,29 @@ type Column struct {
 
 // Card represents a task/card inside a column.
 // Matches the `cards` table in seed/kanban.sql.
+// Attachments are exempt because we need to provide presigned URLs instead
+// of object IDs to the client.
 type Card struct {
-	ID          int    `db:"id" json:"id"`
-	ColumnID    int    `db:"column_id" json:"column_id"`
-	Title       string `db:"title" json:"title"`
-	Description string `db:"description" json:"description"`
-	Position    int    `db:"position" json:"position"`
-	UserID      int    `db:"user_id" json:"user_id"`
+	ID          int                  `db:"id" json:"id"`
+	ColumnID    int                  `db:"column_id" json:"column_id"`
+	Title       string               `db:"title" json:"title"`
+	Description string               `db:"description" json:"description"`
+	Position    int                  `db:"position" json:"position"`
+	Attachments []AttachmentResponse `db:"-" json:"attachments"`
+	UserID      int                  `db:"user_id" json:"user_id"`
+}
+
+// Attachment represents a file attachment info for a card.
+// Matches the `attachments` table in seed/kanban.sql.
+type Attachment struct {
+	ID         int    `db:"id" json:"id"`
+	Filename   string `db:"filename" json:"filename"`
+	CardID     int    `db:"card_id" json:"card_id"`
+	Size       int64  `db:"size" json:"size"`
+	Type       string `db:"type" json:"type"`
+	ObjectID   string `db:"object_id" json:"object_id"`
+	UploadDone bool   `db:"upload_done" json:"upload_done"`
+	UserID     int    `db:"user_id" json:"user_id"`
 }
 
 // String implements fmt.Stringer for Board.
@@ -98,6 +114,24 @@ type AuthResponse struct {
 	Message string `json:"message"`
 	Token   string `json:"token,omitempty"`
 	User    *User  `json:"user,omitempty"`
+}
+
+type PrepareAttachmentRequest struct {
+	Filename string `json:"filename"`
+	Type     string `json:"filetype"`
+}
+
+type PrepareAttachmentResponse struct {
+	ID  int    `json:"id"`
+	URL string `json:"url"`
+}
+
+type AttachmentResponse struct {
+	ID       int    `json:"id"`
+	Filename string `json:"filename"`
+	Type     string `json:"type"`
+	Size     int64  `json:"size"`
+	URL      string `json:"url"`
 }
 
 // For documentation

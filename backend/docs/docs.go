@@ -258,7 +258,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal.nameRequest"
+                            "$ref": "#/definitions/internal.NameRequest"
                         }
                     }
                 ],
@@ -315,7 +315,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal.idRequest"
+                            "$ref": "#/definitions/internal.IdRequest"
                         }
                     }
                 ],
@@ -627,7 +627,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal.idRequest"
+                            "$ref": "#/definitions/internal.IdRequest"
                         }
                     }
                 ],
@@ -655,6 +655,203 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to delete card",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/card/{cardId}/attachment/prepare": {
+            "put": {
+                "description": "Create an attachment metadata entry and get a presigned URL for uploading to S3.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachments"
+                ],
+                "summary": "Prepare Attachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Card ID",
+                        "name": "cardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Attachment preparation payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal.PrepareAttachmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL and attachment ID",
+                        "schema": {
+                            "$ref": "#/definitions/internal.PrepareAttachmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "404": {
+                        "description": "Card not found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to prepare attachment",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/card/{cardId}/attachment/{attachmentId}": {
+            "delete": {
+                "description": "Delete an attachment from the database and remove it from S3 storage.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachments"
+                ],
+                "summary": "Delete Attachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Card ID",
+                        "name": "cardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachmentId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Attachment deleted successfully"
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "404": {
+                        "description": "Attachment or card not found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete attachment",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/card/{cardId}/attachment/{attachmentId}/finalize": {
+            "put": {
+                "description": "Verify that the file was uploaded to S3 and mark the attachment as active.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachments"
+                ],
+                "summary": "Finalize Attachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Card ID",
+                        "name": "cardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachmentId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Attachment finalized successfully",
+                        "schema": {
+                            "$ref": "#/definitions/internal.AttachmentResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "404": {
+                        "description": "Attachment or card not found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to finalize attachment",
                         "schema": {
                             "$ref": "#/definitions/internal.JSONError"
                         }
@@ -860,7 +1057,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal.idRequest"
+                            "$ref": "#/definitions/internal.IdRequest"
                         }
                     }
                 ],
@@ -957,6 +1154,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "internal.AttachmentResponse": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "internal.AuthResponse": {
             "type": "object",
             "properties": {
@@ -991,6 +1208,12 @@ const docTemplate = `{
         "internal.Card": {
             "type": "object",
             "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal.AttachmentResponse"
+                    }
+                },
                 "column_id": {
                     "type": "integer"
                 },
@@ -1005,6 +1228,9 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1021,6 +1247,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "position": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal.IdRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "integer"
                 }
             }
@@ -1063,6 +1300,36 @@ const docTemplate = `{
                 }
             }
         },
+        "internal.NameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal.PrepareAttachmentRequest": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string"
+                },
+                "filetype": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal.PrepareAttachmentResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "internal.RegisterRequest": {
             "type": "object",
             "properties": {
@@ -1093,29 +1360,13 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "internal.idRequest": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "internal.nameRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                }
-            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.2",
+	Version:          "0.3",
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},

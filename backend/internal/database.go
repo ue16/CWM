@@ -412,3 +412,75 @@ func (db *DB) CompareCardOwner(ctx context.Context, id, user_id int) (bool, erro
 	}
 	return owner == user_id, nil
 }
+
+//
+// Attachments
+//
+
+// CreateAttachment inserts a new attachment and returns it with the assigned ID.
+func (db *DB) CreateAttachment(ctx context.Context, a Attachment) (Attachment, error) {
+	var id int
+	err := db.pool.QueryRow(ctx,
+		`INSERT INTO attachments (card_id, filename, size, type, object_id, upload_done, user_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+		a.CardID, a.Filename, a.Size, a.Type, a.ObjectID, a.UploadDone, a.UserID,
+	).Scan(&id)
+	if err != nil {
+		return Attachment{}, fmt.Errorf("CreateAttachment: %w", err)
+	}
+	a.ID = id
+	return a, nil
+}
+
+// GetAttachmentByID retrieves an attachment by id.
+func (db *DB) GetAttachmentByID(ctx context.Context, id int) (Attachment, error) {
+	var a Attachment
+	err := db.pool.QueryRow(ctx,
+		`SELECT id, card_id, filename, size, type, object_id, upload_done, user_id FROM attachments WHERE id = $1`,
+		id,
+	).Scan(&a.ID, &a.CardID, &a.Filename, &a.Size, &a.Type, &a.ObjectID, &a.UploadDone, &a.UserID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return Attachment{}, fmt.Errorf("GetAttachmentByID: not found")
+		}
+		return Attachment{}, fmt.Errorf("GetAttachmentByID: %w", err)
+	}
+	return a, nil
+}
+
+// UpdateAttachment updates an attachment's fields.
+func (db *DB) UpdateAttachment(ctx context.Context, a Attachment) error {
+	ct, err := db.pool.Exec(ctx,
+		`UPDATE attachments SET filename = $1, size = $2, type = $3, object_id = $4, upload_done = $5 WHERE id = $6`,
+		a.Filename, a.Size, a.Type, a.ObjectID, a.UploadDone, a.ID)
+	if err != nil {
+		return fmt.Errorf("UpdateAttachment: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("UpdateAttachment: not found")
+	}
+	return nil
+}
+
+// DeleteAttachment deletes an attachment by id.
+func (db *DB) DeleteAttachment(ctx context.Context, id int) error {
+	ct, err := db.pool.Exec(ctx, `DELETE FROM attachments WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("DeleteAttachment: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("DeleteAttachment: not found")
+	}
+	return nil
+}
+
+// CompareAttachmentOwner compares the owner of an attachment with a given user ID. Returns true if the owner matches the user ID.
+func (db *DB) CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error) {
+	var owner int
+	row := db.pool.QueryRow(ctx, `SELECT user_id FROM attachments WHERE id = $1`, id)
+	err := row.Scan(&owner)
+	if err != nil {
+		return false, fmt.Errorf("CompareAttachmentOwner: %w", err)
+	}
+	return owner == user_id, nil
+}
