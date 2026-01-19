@@ -331,15 +331,16 @@ func (s *Server) deleteAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete from S3
-	objectKey := fmt.Sprintf("%d/%d/%s", cardID, attachmentID, attachment.Filename)
-	err = s.s3Client.FileDelete(simples3.DeleteInput{
+	err = s.s3ClientAlt.FileDelete(simples3.DeleteInput{
 		Bucket:    attachmentsBucket,
-		ObjectKey: objectKey,
+		ObjectKey: attachment.ObjectID,
 	})
 	if err != nil {
 		// Log the error but don't fail the request - database cleanup is more important
 		// In production, you might want to handle this differently
 		log.Printf("Failed to delete attachment from S3: %v", err)
+		http.Error(w, `{"error": "failed to delete attachment"}`, http.StatusInternalServerError)
+		return
 	}
 
 	// Delete from database
