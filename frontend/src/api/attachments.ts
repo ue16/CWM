@@ -117,3 +117,10 @@ export const downloadAttachment = async (
 		throw error
 	}
 }
+
+/**
+ * Delete an attachment from a card
+ */
+export const deleteAttachment = async (cardId: number, attachmentId: number): Promise<void> => {
+	await client.delete(`${API_BASE}/card/${cardId}/attachment/${attachmentId}`)
+}

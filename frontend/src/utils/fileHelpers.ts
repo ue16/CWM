@@ -191,3 +191,14 @@ export async function uploadAttachmentFile(
 		throw error
 	}
 }
+
+/**
+ * Handle attachment deletion
+ * @param cardId - The card ID
+ * @param attachmentId - The attachment ID to delete
+ * @returns Promise that resolves when deletion is complete
+ */
+export async function deleteAttachmentFile(cardId: number, attachmentId: number): Promise<void> {
+	const { deleteAttachment } = await import('../api/attachments')
+	await deleteAttachment(cardId, attachmentId)
+}

@@ -48,6 +48,15 @@
 									formatFileSize(attachment.size)
 								}}</span>
 							</div>
+							<button
+								type="button"
+								class="attachment-delete-btn"
+								@click="handleDeleteAttachment(attachment.id, attachment.filename)"
+								:disabled="isDeletingId === attachment.id"
+								title="Delete attachment"
+							>
+								{{ isDeletingId === attachment.id ? '⏳' : '✕' }}
+							</button>
 						</div>
 					</div>
 
@@ -113,6 +122,7 @@ import {
 	formatFileSize,
 	truncateFilename,
 	uploadAttachmentFile,
+	deleteAttachmentFile,
 } from '../utils/fileHelpers'
 
 export default {
@@ -138,6 +148,7 @@ export default {
 			},
 			isSubmitting: false,
 			isUploading: false,
+			isDeletingId: null,
 			error: '',
 			uploadError: '',
 			uploadProgress: 0,
@@ -242,6 +253,29 @@ export default {
 		getFileIcon,
 		formatFileSize,
 		truncateFilename,
+
+		async handleDeleteAttachment(attachmentId, filename) {
+			if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
+				return
+			}
+
+			try {
+				this.isDeletingId = attachmentId
+				this.uploadError = ''
+
+				await deleteAttachmentFile(this.editedCard.id, attachmentId)
+
+				// Remove from local list
+				this.editedCard.attachments = this.editedCard.attachments.filter(
+					(att) => att.id !== attachmentId,
+				)
+			} catch (err) {
+				console.error('Error deleting attachment:', err)
+				this.uploadError = err.message || 'Failed to delete attachment. Please try again.'
+			} finally {
+				this.isDeletingId = null
+			}
+		},
 
 		closeModal() {
 			this.$emit('close')
@@ -416,6 +450,28 @@ export default {
 .attachment-size {
 	font-size: 0.8rem;
 	color: #999;
+}
+
+.attachment-delete-btn {
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	color: #d32f2f;
+	cursor: pointer;
+	padding: 4px 8px;
+	font-size: 1rem;
+	border-radius: 4px;
+	transition: all 0.2s;
+	font-family: var(--font-family-emoji);
+}
+
+.attachment-delete-btn:hover:not(:disabled) {
+	background-color: #ffebee;
+}
+
+.attachment-delete-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 .no-attachments {
