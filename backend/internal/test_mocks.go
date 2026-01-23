@@ -127,3 +127,7 @@ func (m *MockStore) DeleteAttachment(ctx context.Context, id int) error {
 func (m *MockStore) CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error) {
 	return m.CompareAttachmentOwnerFunc(ctx, id, user_id)
 }
+
+func (m *MockStore) Close() {
+	// noop
+}

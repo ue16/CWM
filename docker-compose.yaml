@@ -7,6 +7,7 @@ x-microservice-base: &base
     - private
   depends_on:
     - database
+    - mongodb
 
 services:
   auth:
@@ -84,6 +85,15 @@ services:
       - private
       - public
 
+  mongodb:
+    image: mongo:8
+    volumes:
+      - mongodb_data:/data/db
+      - ./seed:/docker-entrypoint-initdb.d:ro
+    networks:
+      - private
+      - public
+
   filestore:
     image: scireum/s3-ninja:latest
     ports:
@@ -100,5 +110,6 @@ networks:
   public:
 
 volumes:
+  mongodb_data:
   postgres_data:
   filestore_data:

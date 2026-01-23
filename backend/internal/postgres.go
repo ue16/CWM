@@ -11,19 +11,19 @@ import (
 )
 
 // Assertion to ensure DB implements the Store interface
-var _ Store = (*DB)(nil)
+var _ Store = (*PostgresDB)(nil)
 
-// DB wraps a pgxpool.Pool and provides CRUD helpers for the Kanban models.
-type DB struct {
+// PostgresDB wraps a pgxpool.Pool and provides CRUD helpers for the Kanban models.
+type PostgresDB struct {
 	pool   *pgxpool.Pool
 	cancel context.CancelFunc
 }
 
-// NewDB creates a new DB given a Postgres connection string. It retries for up
+// NewPostgresDB creates a new DB given a Postgres connection string. It retries for up
 // to 5 times (max ~1 Minute) or fails.
 // Example connString: "postgres://user:pass@localhost:5432/dbname"
-func NewDB(connString string) (*DB, error) {
-	connect := func(ctx context.Context) (*DB, error) {
+func NewPostgresDB(connString string) (*PostgresDB, error) {
+	connect := func(ctx context.Context) (*PostgresDB, error) {
 		pool, err := pgxpool.New(ctx, connString)
 		if err != nil {
 			return nil, fmt.Errorf("pgxpool.New: %w", err)
@@ -35,10 +35,10 @@ func NewDB(connString string) (*DB, error) {
 			return nil, fmt.Errorf("ping db: %w", err)
 		}
 
-		return &DB{pool: pool}, nil
+		return &PostgresDB{pool: pool}, nil
 	}
 
-	var db *DB
+	var db *PostgresDB
 	var err error
 	var wait time.Duration
 	maxAttempts := 5
@@ -62,7 +62,7 @@ func NewDB(connString string) (*DB, error) {
 }
 
 // Close releases the underlying pool connections.
-func (db *DB) Close() {
+func (db *PostgresDB) Close() {
 	db.cancel()
 	if db.pool != nil {
 		db.pool.Close()
@@ -74,7 +74,7 @@ func (db *DB) Close() {
 //
 
 // CreateUser inserts a new user and returns it with the assigned ID.
-func (db *DB) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
+func (db *PostgresDB) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
 	var id int
 	var createdAt time.Time
 	err := db.pool.QueryRow(ctx,
@@ -88,7 +88,7 @@ func (db *DB) CreateUser(ctx context.Context, username, email, passwordHash stri
 }
 
 // GetUserByUsername retrieves a user by username.
-func (db *DB) GetUserByUsername(ctx context.Context, username string) (User, error) {
+func (db *PostgresDB) GetUserByUsername(ctx context.Context, username string) (User, error) {
 	var u User
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, username, email, password_hash, created_at FROM users WHERE username = $1`,
@@ -104,7 +104,7 @@ func (db *DB) GetUserByUsername(ctx context.Context, username string) (User, err
 }
 
 // GetUserByID retrieves a user by id.
-func (db *DB) GetUserByID(ctx context.Context, id int) (User, error) {
+func (db *PostgresDB) GetUserByID(ctx context.Context, id int) (User, error) {
 	var u User
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, username, email, password_hash, created_at FROM users WHERE id = $1`,
@@ -120,7 +120,7 @@ func (db *DB) GetUserByID(ctx context.Context, id int) (User, error) {
 }
 
 // UserExists checks if a user with the given username exists.
-func (db *DB) UserExists(ctx context.Context, username string) (bool, error) {
+func (db *PostgresDB) UserExists(ctx context.Context, username string) (bool, error) {
 	var count int
 	err := db.pool.QueryRow(ctx,
 		`SELECT COUNT(*) FROM users WHERE username = $1`,
@@ -137,7 +137,7 @@ func (db *DB) UserExists(ctx context.Context, username string) (bool, error) {
 //
 
 // CreateBoard inserts a new board and returns it with the assigned ID.
-func (db *DB) CreateBoard(ctx context.Context, name string, userID int) (Board, error) {
+func (db *PostgresDB) CreateBoard(ctx context.Context, name string, userID int) (Board, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
 		`INSERT INTO boards (name, user_id) VALUES ($1, $2) RETURNING id`,
@@ -150,7 +150,7 @@ func (db *DB) CreateBoard(ctx context.Context, name string, userID int) (Board, 
 }
 
 // GetBoardByID retrieves a board by id.
-func (db *DB) GetBoardByID(ctx context.Context, id int) (Board, error) {
+func (db *PostgresDB) GetBoardByID(ctx context.Context, id int) (Board, error) {
 	var b Board
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, name, user_id FROM boards WHERE id = $1`,
@@ -166,7 +166,7 @@ func (db *DB) GetBoardByID(ctx context.Context, id int) (Board, error) {
 }
 
 // ListBoards returns all boards for a user.
-func (db *DB) ListBoards(ctx context.Context, userID int) ([]Board, error) {
+func (db *PostgresDB) ListBoards(ctx context.Context, userID int) ([]Board, error) {
 	rows, err := db.pool.Query(ctx, `SELECT id, name, user_id FROM boards WHERE user_id = $1 ORDER BY id`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ListBoards: %w", err)
@@ -188,7 +188,7 @@ func (db *DB) ListBoards(ctx context.Context, userID int) ([]Board, error) {
 }
 
 // UpdateBoard updates a board's name.
-func (db *DB) UpdateBoard(ctx context.Context, b Board) error {
+func (db *PostgresDB) UpdateBoard(ctx context.Context, b Board) error {
 	ct, err := db.pool.Exec(ctx, `UPDATE boards SET name = $1 WHERE id = $2`, b.Name, b.ID)
 	if err != nil {
 		return fmt.Errorf("UpdateBoard: %w", err)
@@ -200,7 +200,7 @@ func (db *DB) UpdateBoard(ctx context.Context, b Board) error {
 }
 
 // DeleteBoard deletes a board by id. ON DELETE CASCADE will remove related columns/cards.
-func (db *DB) DeleteBoard(ctx context.Context, id int) error {
+func (db *PostgresDB) DeleteBoard(ctx context.Context, id int) error {
 	ct, err := db.pool.Exec(ctx, `DELETE FROM boards WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("DeleteBoard: %w", err)
@@ -212,7 +212,7 @@ func (db *DB) DeleteBoard(ctx context.Context, id int) error {
 }
 
 // CompareBoardOwner compares the owner of a board with a given user ID. Returns true if the owner matches the user ID.
-func (db *DB) CompareBoardOwner(ctx context.Context, id, user_id int) (bool, error) {
+func (db *PostgresDB) CompareBoardOwner(ctx context.Context, id, user_id int) (bool, error) {
 	var owner int
 	row := db.pool.QueryRow(ctx, `SELECT user_id FROM boards WHERE id = $1`, id)
 	err := row.Scan(&owner)
@@ -227,7 +227,7 @@ func (db *DB) CompareBoardOwner(ctx context.Context, id, user_id int) (bool, err
 //
 
 // CreateColumn inserts a new column and returns it with the assigned ID.
-func (db *DB) CreateColumn(ctx context.Context, c Column) (Column, error) {
+func (db *PostgresDB) CreateColumn(ctx context.Context, c Column) (Column, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
 		`INSERT INTO columns (board_id, name, position, user_id) VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -241,7 +241,7 @@ func (db *DB) CreateColumn(ctx context.Context, c Column) (Column, error) {
 }
 
 // GetColumnByID retrieves a column by id.
-func (db *DB) GetColumnByID(ctx context.Context, id int) (Column, error) {
+func (db *PostgresDB) GetColumnByID(ctx context.Context, id int) (Column, error) {
 	var c Column
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, board_id, name, position FROM columns WHERE id = $1`,
@@ -257,7 +257,7 @@ func (db *DB) GetColumnByID(ctx context.Context, id int) (Column, error) {
 }
 
 // GetColumnsByBoardID returns columns for a board ordered by position.
-func (db *DB) GetColumnsByBoardID(ctx context.Context, boardID int) ([]Column, error) {
+func (db *PostgresDB) GetColumnsByBoardID(ctx context.Context, boardID int) ([]Column, error) {
 	rows, err := db.pool.Query(ctx,
 		`SELECT id, board_id, name, position FROM columns WHERE board_id = $1 ORDER BY position, id`,
 		boardID,
@@ -282,7 +282,7 @@ func (db *DB) GetColumnsByBoardID(ctx context.Context, boardID int) ([]Column, e
 }
 
 // UpdateColumn updates a column's fields.
-func (db *DB) UpdateColumn(ctx context.Context, c Column) error {
+func (db *PostgresDB) UpdateColumn(ctx context.Context, c Column) error {
 	ct, err := db.pool.Exec(ctx, `UPDATE columns SET board_id = $1, name = $2, position = $3 WHERE id = $4`,
 		c.BoardID, c.Name, c.Position, c.ID)
 	if err != nil {
@@ -295,7 +295,7 @@ func (db *DB) UpdateColumn(ctx context.Context, c Column) error {
 }
 
 // DeleteColumn deletes a column by id. Cascade deletes cards.
-func (db *DB) DeleteColumn(ctx context.Context, id int) error {
+func (db *PostgresDB) DeleteColumn(ctx context.Context, id int) error {
 	ct, err := db.pool.Exec(ctx, `DELETE FROM columns WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("DeleteColumn: %w", err)
@@ -307,7 +307,7 @@ func (db *DB) DeleteColumn(ctx context.Context, id int) error {
 }
 
 // CompareColumnOwner compares the owner of a column with a given user ID. Returns true if the owner matches the user ID.
-func (db *DB) CompareColumnOwner(ctx context.Context, id, user_id int) (bool, error) {
+func (db *PostgresDB) CompareColumnOwner(ctx context.Context, id, user_id int) (bool, error) {
 	var owner int
 	row := db.pool.QueryRow(ctx, `SELECT user_id FROM columns WHERE id = $1`, id)
 	err := row.Scan(&owner)
@@ -322,7 +322,7 @@ func (db *DB) CompareColumnOwner(ctx context.Context, id, user_id int) (bool, er
 //
 
 // CreateCard inserts a new card and returns it with the assigned ID.
-func (db *DB) CreateCard(ctx context.Context, c Card) (Card, error) {
+func (db *PostgresDB) CreateCard(ctx context.Context, c Card) (Card, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
 		`INSERT INTO cards (column_id, title, description, position, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
@@ -336,7 +336,7 @@ func (db *DB) CreateCard(ctx context.Context, c Card) (Card, error) {
 }
 
 // GetCardByID retrieves a card by id.
-func (db *DB) GetCardByID(ctx context.Context, id int) (Card, error) {
+func (db *PostgresDB) GetCardByID(ctx context.Context, id int) (Card, error) {
 	var c Card
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, column_id, title, description, position FROM cards WHERE id = $1`,
@@ -352,7 +352,7 @@ func (db *DB) GetCardByID(ctx context.Context, id int) (Card, error) {
 }
 
 // GetCardsByColumnID returns cards for a column ordered by position.
-func (db *DB) GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, error) {
+func (db *PostgresDB) GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, error) {
 	rows, err := db.pool.Query(ctx,
 		`SELECT id, column_id, title, description, position FROM cards WHERE column_id = $1 ORDER BY position, id`,
 		columnID,
@@ -377,7 +377,7 @@ func (db *DB) GetCardsByColumnID(ctx context.Context, columnID int) ([]Card, err
 }
 
 // UpdateCard updates a card's fields.
-func (db *DB) UpdateCard(ctx context.Context, c Card) error {
+func (db *PostgresDB) UpdateCard(ctx context.Context, c Card) error {
 	ct, err := db.pool.Exec(ctx,
 		`UPDATE cards SET column_id = $1, title = $2, description = $3, position = $4 WHERE id = $5`,
 		c.ColumnID, c.Title, c.Description, c.Position, c.ID)
@@ -391,7 +391,7 @@ func (db *DB) UpdateCard(ctx context.Context, c Card) error {
 }
 
 // DeleteCard deletes a card by id.
-func (db *DB) DeleteCard(ctx context.Context, id int) error {
+func (db *PostgresDB) DeleteCard(ctx context.Context, id int) error {
 	ct, err := db.pool.Exec(ctx, `DELETE FROM cards WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("DeleteCard: %w", err)
@@ -403,7 +403,7 @@ func (db *DB) DeleteCard(ctx context.Context, id int) error {
 }
 
 // CompareCardOwner compares the owner of a card with a given user ID. Returns true if the owner matches the user ID.
-func (db *DB) CompareCardOwner(ctx context.Context, id, user_id int) (bool, error) {
+func (db *PostgresDB) CompareCardOwner(ctx context.Context, id, user_id int) (bool, error) {
 	var owner int
 	row := db.pool.QueryRow(ctx, `SELECT user_id FROM cards WHERE id = $1`, id)
 	err := row.Scan(&owner)
@@ -418,7 +418,7 @@ func (db *DB) CompareCardOwner(ctx context.Context, id, user_id int) (bool, erro
 //
 
 // CreateAttachment inserts a new attachment and returns it with the assigned ID.
-func (db *DB) CreateAttachment(ctx context.Context, a Attachment) (Attachment, error) {
+func (db *PostgresDB) CreateAttachment(ctx context.Context, a Attachment) (Attachment, error) {
 	var id int
 	err := db.pool.QueryRow(ctx,
 		`INSERT INTO attachments (card_id, filename, size, type, object_id, upload_done, user_id)
@@ -433,7 +433,7 @@ func (db *DB) CreateAttachment(ctx context.Context, a Attachment) (Attachment, e
 }
 
 // GetAttachmentByID retrieves an attachment by id.
-func (db *DB) GetAttachmentByID(ctx context.Context, id int) (Attachment, error) {
+func (db *PostgresDB) GetAttachmentByID(ctx context.Context, id int) (Attachment, error) {
 	var a Attachment
 	err := db.pool.QueryRow(ctx,
 		`SELECT id, card_id, filename, size, type, object_id, upload_done, user_id FROM attachments WHERE id = $1`,
@@ -449,7 +449,7 @@ func (db *DB) GetAttachmentByID(ctx context.Context, id int) (Attachment, error)
 }
 
 // GetAttachmentsByMultipleCardIDs retrieves all attachments belonging to the owning card ids.
-func (db *DB) GetAttachmentsByMultipleCardIDs(ctx context.Context, ids []int) ([]Attachment, error) {
+func (db *PostgresDB) GetAttachmentsByMultipleCardIDs(ctx context.Context, ids []int) ([]Attachment, error) {
 	rows, err := db.pool.Query(ctx,
 		`SELECT id, card_id, filename, size, type, object_id, upload_done, user_id FROM attachments WHERE card_id = ANY($1) AND upload_done = TRUE ORDER BY filename`,
 		ids,
@@ -474,7 +474,7 @@ func (db *DB) GetAttachmentsByMultipleCardIDs(ctx context.Context, ids []int) ([
 }
 
 // UpdateAttachment updates an attachment's fields.
-func (db *DB) UpdateAttachment(ctx context.Context, a Attachment) error {
+func (db *PostgresDB) UpdateAttachment(ctx context.Context, a Attachment) error {
 	ct, err := db.pool.Exec(ctx,
 		`UPDATE attachments SET filename = $1, size = $2, type = $3, object_id = $4, upload_done = $5 WHERE id = $6`,
 		a.Filename, a.Size, a.Type, a.ObjectID, a.UploadDone, a.ID)
@@ -488,7 +488,7 @@ func (db *DB) UpdateAttachment(ctx context.Context, a Attachment) error {
 }
 
 // DeleteAttachment deletes an attachment by id.
-func (db *DB) DeleteAttachment(ctx context.Context, id int) error {
+func (db *PostgresDB) DeleteAttachment(ctx context.Context, id int) error {
 	ct, err := db.pool.Exec(ctx, `DELETE FROM attachments WHERE id = $1`, id)
 	if err != nil {
 		return fmt.Errorf("DeleteAttachment: %w", err)
@@ -500,7 +500,7 @@ func (db *DB) DeleteAttachment(ctx context.Context, id int) error {
 }
 
 // CompareAttachmentOwner compares the owner of an attachment with a given user ID. Returns true if the owner matches the user ID.
-func (db *DB) CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error) {
+func (db *PostgresDB) CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error) {
 	var owner int
 	row := db.pool.QueryRow(ctx, `SELECT user_id FROM attachments WHERE id = $1`, id)
 	err := row.Scan(&owner)

@@ -3,6 +3,8 @@ package internal
 import "context"
 
 type Store interface {
+	Close()
+
 	// User operations
 	CreateUser(ctx context.Context, username, email, passwordHash string) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)

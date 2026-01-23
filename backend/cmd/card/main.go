@@ -16,7 +16,7 @@ func main() {
 		log.Fatal("DATABASE_URL env var not set")
 	}
 
-	db, err := internal.NewDB(connString)
+	db, err := internal.NewDBFromConnectionString(connString)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
