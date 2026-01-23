@@ -205,6 +205,7 @@ func (s *Server) updateCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	card.UserID = userID
 	if err := s.store.UpdateCard(r.Context(), card); err != nil {
 		http.Error(w, `{"error": "failed to update card"}`, http.StatusInternalServerError)
 		return

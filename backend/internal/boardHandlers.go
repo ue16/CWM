@@ -133,6 +133,7 @@ func (s *Server) updateBoard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	board.UserID = userID
 	if err := s.store.UpdateBoard(r.Context(), board); err != nil {
 		http.Error(w, `{"error": "failed to update board"}`, http.StatusInternalServerError)
 		return

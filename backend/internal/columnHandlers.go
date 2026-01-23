@@ -179,6 +179,7 @@ func (s *Server) updateColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	column.UserID = userID
 	if err := s.store.UpdateColumn(r.Context(), column); err != nil {
 		http.Error(w, "{\"error\": \"failed to update column\"}", http.StatusInternalServerError)
 		return
