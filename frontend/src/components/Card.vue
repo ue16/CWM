@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import { getFileIcon, formatFileSize, truncateFilename } from '../utils'
+import { getFileIcon, formatFileSize, truncateFilename } from '../utils/fileHelpers'
 import { downloadAttachment } from '../api/attachments'
 
 export default {

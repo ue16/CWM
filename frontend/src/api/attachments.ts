@@ -14,6 +14,11 @@ export interface AttachmentUrlResponse {
 	url: string
 }
 
+export interface PrepareAttachmentResponse {
+	id: number
+	url: string
+}
+
 /**
  * Get a pre-signed URL for downloading an attachment
  */
@@ -22,6 +27,55 @@ export const getAttachmentUrl = async (cardId: number, attachmentId: number): Pr
 		`${API_BASE}/card/${cardId}/attachment/${attachmentId}/url`,
 	)
 	return response.data.url
+}
+
+/**
+ * Prepare an attachment for upload
+ * Returns the attachment ID and a pre-signed URL for S3 upload
+ */
+export const prepareAttachment = async (
+	cardId: number,
+	filename: string,
+	filetype: string,
+): Promise<PrepareAttachmentResponse> => {
+	const response = await client.put<PrepareAttachmentResponse>(
+		`${API_BASE}/card/${cardId}/attachment/prepare`,
+		{
+			filename,
+			filetype,
+		},
+	)
+	return response.data
+}
+
+/**
+ * Upload a file to S3 using a pre-signed URL
+ */
+export const uploadToS3 = async (presignedUrl: string, file: File): Promise<void> => {
+	const response = await fetch(presignedUrl, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': file.type,
+		},
+		body: file,
+	})
+
+	if (!response.ok) {
+		throw new Error(`Failed to upload file to S3: ${response.statusText}`)
+	}
+}
+
+/**
+ * Finalize an attachment after uploading to S3
+ */
+export const finalizeAttachment = async (
+	cardId: number,
+	attachmentId: number,
+): Promise<Attachment> => {
+	const response = await client.put<Attachment>(
+		`${API_BASE}/card/${cardId}/attachment/${attachmentId}/finalize`,
+	)
+	return response.data
 }
 
 /**

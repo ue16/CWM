@@ -127,7 +127,10 @@ export function formatFileSize(sizeStr: string | number | null | undefined): str
  * @param maxLength - Maximum length of the result (default: 20)
  * @returns Truncated filename with extension preserved
  */
-export function truncateFilename(filename: string | null | undefined, maxLength: number = 20): string {
+export function truncateFilename(
+	filename: string | null | undefined,
+	maxLength: number = 20,
+): string {
 	if (!filename) return 'Unknown'
 	if (filename.length <= maxLength) return filename
 
@@ -148,4 +151,43 @@ export function truncateFilename(filename: string | null | undefined, maxLength:
 	}
 
 	return name.substring(0, availableLength) + '...' + ext
+}
+
+/**
+ * Handle the complete attachment upload workflow
+ * @param cardId - The card ID to upload attachment to
+ * @param file - The file to upload
+ * @param onProgress - Callback to track upload progress (0-100)
+ * @returns The finalized attachment object
+ */
+export async function uploadAttachmentFile(
+	cardId: number,
+	file: File,
+	onProgress: (progress: number) => void,
+): Promise<any> {
+	try {
+		const { prepareAttachment, uploadToS3, finalizeAttachment } = await import(
+			'../api/attachments'
+		)
+
+		// Step 1: Prepare attachment (get presigned URL)
+		onProgress(10)
+		const prepareResponse = await prepareAttachment(cardId, file.name, file.type)
+		const attachmentId = prepareResponse.id
+		const presignedUrl = prepareResponse.url
+
+		// Step 2: Upload file to S3
+		onProgress(50)
+		await uploadToS3(presignedUrl, file)
+
+		// Step 3: Finalize attachment
+		onProgress(90)
+		const finalizedAttachment = await finalizeAttachment(cardId, attachmentId)
+
+		onProgress(100)
+		return finalizedAttachment
+	} catch (error) {
+		console.error('Error uploading attachment:', error)
+		throw error
+	}
 }
