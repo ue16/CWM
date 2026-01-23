@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -236,7 +235,61 @@ func (s *Server) finalizeAttachment(w http.ResponseWriter, r *http.Request) {
 		ID:       attachment.ID,
 		Filename: attachment.Filename,
 		Type:     attachment.Type,
-		Size:     attachment.Size,
+		Size:     humanizeBytes(attachment.Size),
+		URL: s.s3Client.GeneratePresignedURL(simples3.PresignedInput{
+			Bucket:        attachmentsBucket,
+			ObjectKey:     attachment.ObjectID,
+			Method:        "GET",
+			ExpirySeconds: presignedURLExpiry,
+		}),
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// getAttachmentURL returns a pre-signed url for the given attachment
+// @Summary Get Attachment URL
+// @Description Get a pre-signed URL for the given attachment
+// @Tags Attachments
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer token from login"
+// @Param cardId path int true "Card ID"
+// @Param attachmentId path int true "Attachment ID"
+// @Success 200 {object} PrepareAttachmentResponse "URL to retrieve the attachment"
+// @Failure 401 {object} JSONError "Invalid auth token"
+// @Failure 404 {object} JSONError "Attachment or card not found"
+// @Failure 500 {object} JSONError "Failed to get attachment"
+// @Router /api/v2/card/{cardId}/attachment/{attachmentId}/url [get]
+func (s *Server) getAttachmentURL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	if s.s3Client == nil {
+		http.Error(w, `{"error": "s3 storage not configured"}`, http.StatusInternalServerError)
+		return
+	}
+
+	attachmentIDStr := chi.URLParam(r, "attachmentId")
+	if attachmentIDStr == "" {
+		http.Error(w, `{"error": "missing attachment ID"}`, http.StatusBadRequest)
+		return
+	}
+
+	attachmentID, err := strconv.Atoi(attachmentIDStr)
+	if err != nil {
+		http.Error(w, `{"error": "invalid attachment ID, must be an integer"}`, http.StatusBadRequest)
+		return
+	}
+
+	attachment, err := s.store.GetAttachmentByID(r.Context(), attachmentID)
+	if err != nil {
+		http.Error(w, `{"error": "failed to get attachment"}`, http.StatusInternalServerError)
+		return
+	}
+
+	response := &PrepareAttachmentResponse{
+		ID: attachment.ID,
 		URL: s.s3Client.GeneratePresignedURL(simples3.PresignedInput{
 			Bucket:        attachmentsBucket,
 			ObjectKey:     attachment.ObjectID,
@@ -336,11 +389,14 @@ func (s *Server) deleteAttachment(w http.ResponseWriter, r *http.Request) {
 		ObjectKey: attachment.ObjectID,
 	})
 	if err != nil {
-		// Log the error but don't fail the request - database cleanup is more important
-		// In production, you might want to handle this differently
-		log.Printf("Failed to delete attachment from S3: %v", err)
-		http.Error(w, `{"error": "failed to delete attachment"}`, http.StatusInternalServerError)
-		return
+		// If this fails we assume the attachment is already deleted
+		if _, err = s.s3ClientAlt.FileDetails(simples3.DetailsInput{
+			Bucket:    attachmentsBucket,
+			ObjectKey: attachment.ObjectID,
+		}); err == nil {
+			http.Error(w, `{"error": "failed to delete attachment"}`, http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Delete from database

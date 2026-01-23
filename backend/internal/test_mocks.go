@@ -35,11 +35,12 @@ type MockStore struct {
 	CompareCardOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
 
 	// Attachment operations
-	CreateAttachmentFunc       func(ctx context.Context, a Attachment) (Attachment, error)
-	GetAttachmentByIDFunc      func(ctx context.Context, id int) (Attachment, error)
-	UpdateAttachmentFunc       func(ctx context.Context, a Attachment) error
-	DeleteAttachmentFunc       func(ctx context.Context, id int) error
-	CompareAttachmentOwnerFunc func(ctx context.Context, id, user_id int) (bool, error)
+	CreateAttachmentFunc                func(ctx context.Context, a Attachment) (Attachment, error)
+	GetAttachmentByIDFunc               func(ctx context.Context, id int) (Attachment, error)
+	GetAttachmentsByMultipleCardIDsFunc func(ctx context.Context, cardIDs []int) ([]Attachment, error)
+	UpdateAttachmentFunc                func(ctx context.Context, a Attachment) error
+	DeleteAttachmentFunc                func(ctx context.Context, id int) error
+	CompareAttachmentOwnerFunc          func(ctx context.Context, id, user_id int) (bool, error)
 }
 
 func (m *MockStore) CreateUser(ctx context.Context, username, email, passwordHash string) (User, error) {
@@ -113,6 +114,9 @@ func (m *MockStore) CreateAttachment(ctx context.Context, a Attachment) (Attachm
 }
 func (m *MockStore) GetAttachmentByID(ctx context.Context, id int) (Attachment, error) {
 	return m.GetAttachmentByIDFunc(ctx, id)
+}
+func (m *MockStore) GetAttachmentsByMultipleCardIDs(ctx context.Context, cardIDs []int) ([]Attachment, error) {
+	return m.GetAttachmentsByMultipleCardIDsFunc(ctx, cardIDs)
 }
 func (m *MockStore) UpdateAttachment(ctx context.Context, a Attachment) error {
 	return m.UpdateAttachmentFunc(ctx, a)

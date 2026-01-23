@@ -34,6 +34,9 @@ func TestGetCards(t *testing.T) {
 		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
 			return true, nil
 		},
+		GetAttachmentsByMultipleCardIDsFunc: func(ctx context.Context, cardIDs []int) ([]Attachment, error) {
+			return []Attachment{}, nil
+		},
 	}
 	s := &Server{secret: secret, store: mock}
 
@@ -77,6 +80,9 @@ func TestGetCardsUnauthorized(t *testing.T) {
 		},
 		CompareColumnOwnerFunc: func(ctx context.Context, columnID, userID int) (bool, error) {
 			return false, nil
+		},
+		GetAttachmentsByMultipleCardIDsFunc: func(ctx context.Context, cardIDs []int) ([]Attachment, error) {
+			return []Attachment{}, nil
 		},
 	}
 	s := &Server{secret: secret, store: mock}

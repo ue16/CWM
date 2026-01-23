@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -50,6 +51,32 @@ func (s *Server) getCards(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, `{"error": "failed to fetch cards"}`, http.StatusInternalServerError)
 		return
+	}
+
+	var ids []int
+	for _, card := range cards {
+		ids = append(ids, card.ID)
+	}
+	attachments, err := s.store.GetAttachmentsByMultipleCardIDs(r.Context(), ids)
+	if err != nil {
+		http.Error(w, `{"error": "failed to fetch attachments"}`, http.StatusInternalServerError)
+		log.Printf("failed to fetch attachments: %v", err)
+		return
+	}
+	tmpAttachments := map[int][]AttachmentResponse{}
+	for _, attachment := range attachments {
+		if tmpAttachments[attachment.CardID] == nil {
+			tmpAttachments[attachment.CardID] = []AttachmentResponse{}
+		}
+		tmpAttachments[attachment.CardID] = append(tmpAttachments[attachment.CardID], AttachmentResponse{
+			ID:       attachment.ID,
+			Filename: attachment.Filename,
+			Type:     attachment.Type,
+			Size:     humanizeBytes(attachment.Size),
+		})
+	}
+	for idx := range cards {
+		cards[idx].Attachments = tmpAttachments[cards[idx].ID]
 	}
 
 	// Respond with the cards data

@@ -7,7 +7,7 @@ definitions:
       id:
         type: integer
       size:
-        type: integer
+        type: string
       type:
         type: string
       url:
@@ -653,6 +653,49 @@ paths:
           schema:
             $ref: '#/definitions/internal.JSONError'
       summary: Finalize Attachment
+      tags:
+      - Attachments
+  /api/v2/card/{cardId}/attachment/{attachmentId}/url:
+    get:
+      consumes:
+      - application/json
+      description: Get a pre-signed URL for the given attachment
+      parameters:
+      - description: Bearer token from login
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Card ID
+        in: path
+        name: cardId
+        required: true
+        type: integer
+      - description: Attachment ID
+        in: path
+        name: attachmentId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL to retrieve the attachment
+          schema:
+            $ref: '#/definitions/internal.PrepareAttachmentResponse'
+        "401":
+          description: Invalid auth token
+          schema:
+            $ref: '#/definitions/internal.JSONError'
+        "404":
+          description: Attachment or card not found
+          schema:
+            $ref: '#/definitions/internal.JSONError'
+        "500":
+          description: Failed to get attachment
+          schema:
+            $ref: '#/definitions/internal.JSONError'
+      summary: Get Attachment URL
       tags:
       - Attachments
   /api/v2/card/{cardId}/attachment/prepare:

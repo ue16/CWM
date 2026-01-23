@@ -852,6 +852,70 @@
                 }
             }
         },
+        "/api/v2/card/{cardId}/attachment/{attachmentId}/url": {
+            "get": {
+                "description": "Get a pre-signed URL for the given attachment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachments"
+                ],
+                "summary": "Get Attachment URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token from login",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Card ID",
+                        "name": "cardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachmentId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL to retrieve the attachment",
+                        "schema": {
+                            "$ref": "#/definitions/internal.PrepareAttachmentResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid auth token",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "404": {
+                        "description": "Attachment or card not found",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to get attachment",
+                        "schema": {
+                            "$ref": "#/definitions/internal.JSONError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/card/{columnId}": {
             "get": {
                 "description": "Fetch all cards for a specific column.",
@@ -1157,7 +1221,7 @@
                     "type": "integer"
                 },
                 "size": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "type": {
                     "type": "string"

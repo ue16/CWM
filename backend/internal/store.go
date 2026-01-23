@@ -36,6 +36,7 @@ type Store interface {
 	// Attachment operations
 	CreateAttachment(ctx context.Context, a Attachment) (Attachment, error)
 	GetAttachmentByID(ctx context.Context, id int) (Attachment, error)
+	GetAttachmentsByMultipleCardIDs(ctx context.Context, cardIDs []int) ([]Attachment, error)
 	UpdateAttachment(ctx context.Context, a Attachment) error
 	DeleteAttachment(ctx context.Context, id int) error
 	CompareAttachmentOwner(ctx context.Context, id, user_id int) (bool, error)

@@ -448,6 +448,31 @@ func (db *DB) GetAttachmentByID(ctx context.Context, id int) (Attachment, error)
 	return a, nil
 }
 
+// GetAttachmentsByMultipleCardIDs retrieves all attachments belonging to the owning card ids.
+func (db *DB) GetAttachmentsByMultipleCardIDs(ctx context.Context, ids []int) ([]Attachment, error) {
+	rows, err := db.pool.Query(ctx,
+		`SELECT id, card_id, filename, size, type, object_id, upload_done, user_id FROM attachments WHERE card_id = ANY($1) AND upload_done = TRUE ORDER BY filename`,
+		ids,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("GetAttachmentsByCardID: %w", err)
+	}
+	defer rows.Close()
+
+	var a []Attachment
+	for rows.Next() {
+		var attachment Attachment
+		if err := rows.Scan(&attachment.ID, &attachment.CardID, &attachment.Filename, &attachment.Size, &attachment.Type, &attachment.ObjectID, &attachment.UploadDone, &attachment.UserID); err != nil {
+			return nil, fmt.Errorf("GetAttachmentsByCardID: %w", err)
+		}
+		a = append(a, attachment)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("GetCardsByColumnID rows: %w", rows.Err())
+	}
+	return a, nil
+}
+
 // UpdateAttachment updates an attachment's fields.
 func (db *DB) UpdateAttachment(ctx context.Context, a Attachment) error {
 	ct, err := db.pool.Exec(ctx,

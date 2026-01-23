@@ -136,6 +136,7 @@ func (s *Server) Card() *Server {
 				r.Route("/{cardId}/attachment", func(r chi.Router) {
 					r.Put("/prepare", s.prepareAttachment)
 					r.Put("/{attachmentId}/finalize", s.finalizeAttachment)
+					r.Get("/{attachmentId}/url", s.getAttachmentURL)
 					r.Delete("/{attachmentId}", s.deleteAttachment)
 				})
 			}

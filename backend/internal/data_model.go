@@ -130,7 +130,7 @@ type AttachmentResponse struct {
 	ID       int    `json:"id"`
 	Filename string `json:"filename"`
 	Type     string `json:"type"`
-	Size     int64  `json:"size"`
+	Size     string `json:"size"`
 	URL      string `json:"url"`
 }
 
