@@ -28,12 +28,20 @@
 					v-for="attachment in card.attachments"
 					:key="attachment.id"
 					class="attachment-item"
-					:title="`${attachment.filename} (${formatFileSize(attachment.size)})`"
+					:class="{ 'attachment-downloading': downloadingId === attachment.id }"
+					:title="`${attachment.filename} (${formatFileSize(attachment.size)}) - Click to download`"
+					@click="handleDownloadAttachment(attachment)"
 				>
 					<span class="attachment-icon">{{ getFileIcon(attachment.type) }}</span>
 					<span class="attachment-name">{{ truncateFilename(attachment.filename) }}</span>
 					<span class="attachment-size">{{ formatFileSize(attachment.size) }}</span>
+					<span v-if="downloadingId === attachment.id" class="attachment-spinner"
+						>⏳</span
+					>
 				</div>
+			</div>
+			<div v-if="downloadError" class="attachment-error">
+				{{ downloadError }}
 			</div>
 		</div>
 	</div>
@@ -41,11 +49,18 @@
 
 <script>
 import { getFileIcon, formatFileSize, truncateFilename } from '../utils'
+import { downloadAttachment } from '../api/attachments'
 
 export default {
 	name: 'Card',
 	props: {
 		card: Object,
+	},
+	data() {
+		return {
+			downloadingId: null,
+			downloadError: null,
+		}
 	},
 	computed: {
 		hasAttachments() {
@@ -63,6 +78,27 @@ export default {
 		getFileIcon,
 		formatFileSize,
 		truncateFilename,
+		async handleDownloadAttachment(attachment) {
+			if (this.downloadingId) {
+				return // Prevent multiple simultaneous downloads
+			}
+
+			try {
+				this.downloadingId = attachment.id
+				this.downloadError = null
+
+				await downloadAttachment(this.card.id, attachment.id, attachment.filename)
+			} catch (error) {
+				console.error('Download failed:', error)
+				this.downloadError = 'Failed to download attachment. Please try again.'
+				// Clear error message after 5 seconds
+				setTimeout(() => {
+					this.downloadError = null
+				}, 5000)
+			} finally {
+				this.downloadingId = null
+			}
+		},
 	},
 }
 </script>
