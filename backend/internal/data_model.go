@@ -9,29 +9,29 @@ import (
 // User represents a user account.
 // Matches the `users` table in seed/kanban.sql.
 type User struct {
-	ID           int       `db:"id" json:"id"`
-	Username     string    `db:"username" json:"username"`
-	Email        string    `db:"email" json:"email"`
-	PasswordHash string    `db:"password_hash" json:"-"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	ID           int       `db:"id" json:"id" bson:"id"`
+	Username     string    `db:"username" json:"username" bson:"username"`
+	Email        string    `db:"email" json:"email" bson:"email"`
+	PasswordHash string    `db:"password_hash" json:"-" bson:"password_hash"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at" bson:"created_at"`
 }
 
 // Board represents a Kanban board.
 // Matches the `boards` table in seed/kanban.sql.
 type Board struct {
-	ID     int    `db:"id" json:"id"`
-	Name   string `db:"name" json:"name"`
-	UserID int    `db:"user_id" json:"user_id"`
+	ID     int    `db:"id" json:"id" bson:"id"`
+	Name   string `db:"name" json:"name" bson:"name"`
+	UserID int    `db:"user_id" json:"user_id" bson:"user_id"`
 }
 
 // Column represents a column in a board (e.g., "To Do", "In Progress").
 // Matches the `columns` table in seed/kanban.sql.
 type Column struct {
-	ID       int    `db:"id" json:"id"`
-	BoardID  int    `db:"board_id" json:"board_id"`
-	Name     string `db:"name" json:"name"`
-	Position int    `db:"position" json:"position"`
-	UserID   int    `db:"user_id" json:"user_id"`
+	ID       int    `db:"id" json:"id" bson:"id"`
+	BoardID  int    `db:"board_id" json:"board_id" bson:"board_id"`
+	Name     string `db:"name" json:"name" bson:"name"`
+	Position int    `db:"position" json:"position" bson:"position"`
+	UserID   int    `db:"user_id" json:"user_id" bson:"user_id"`
 }
 
 // Card represents a task/card inside a column.
@@ -39,26 +39,26 @@ type Column struct {
 // Attachments are exempt because we need to provide presigned URLs instead
 // of object IDs to the client.
 type Card struct {
-	ID          int                  `db:"id" json:"id"`
-	ColumnID    int                  `db:"column_id" json:"column_id"`
-	Title       string               `db:"title" json:"title"`
-	Description string               `db:"description" json:"description"`
-	Position    int                  `db:"position" json:"position"`
-	Attachments []AttachmentResponse `db:"-" json:"attachments"`
-	UserID      int                  `db:"user_id" json:"user_id"`
+	ID          int                  `db:"id" json:"id" bson:"id"`
+	ColumnID    int                  `db:"column_id" json:"column_id" bson:"column_id"`
+	Title       string               `db:"title" json:"title" bson:"title"`
+	Description string               `db:"description" json:"description" bson:"description"`
+	Position    int                  `db:"position" json:"position" bson:"position"`
+	Attachments []AttachmentResponse `db:"-" json:"attachments" bson:"-"`
+	UserID      int                  `db:"user_id" json:"user_id" bson:"user_id"`
 }
 
 // Attachment represents a file attachment info for a card.
 // Matches the `attachments` table in seed/kanban.sql.
 type Attachment struct {
-	ID         int    `db:"id" json:"id"`
-	Filename   string `db:"filename" json:"filename"`
-	CardID     int    `db:"card_id" json:"card_id"`
-	Size       int64  `db:"size" json:"size"`
-	Type       string `db:"type" json:"type"`
-	ObjectID   string `db:"object_id" json:"object_id"`
-	UploadDone bool   `db:"upload_done" json:"upload_done"`
-	UserID     int    `db:"user_id" json:"user_id"`
+	ID         int    `db:"id" json:"id" bson:"id"`
+	Filename   string `db:"filename" json:"filename" bson:"filename"`
+	CardID     int    `db:"card_id" json:"card_id" bson:"card_id"`
+	Size       int64  `db:"size" json:"size" bson:"size"`
+	Type       string `db:"type" json:"type" bson:"type"`
+	ObjectID   string `db:"object_id" json:"object_id" bson:"object_id"`
+	UploadDone bool   `db:"upload_done" json:"upload_done" bson:"upload_done"`
+	UserID     int    `db:"user_id" json:"user_id" bson:"user_id"`
 }
 
 // String implements fmt.Stringer for Board.
