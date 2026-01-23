@@ -14,6 +14,7 @@
 	--shadow-hover: rgba(0, 0, 0, 0.15);
 	--font-family: 'Arial', sans-serif;
 	--font-family-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	--font-family-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
 	--transition-speed: 0.3s;
 	--primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	--error-color: #e74c3c;
@@ -44,6 +45,12 @@ body {
 	color: var(--text-color);
 	line-height: 1.6;
 	padding: 20px;
+}
+
+/* Emoji font support for consistent icon rendering */
+.attachments-icon,
+.attachment-icon {
+	font-family: var(--font-family-emoji);
 }
 
 #app {
@@ -814,6 +821,119 @@ button:disabled {
 .card.dragging {
 	opacity: 0.5;
 	transform: scale(0.95);
+}
+
+/* Card attachment styles */
+.card-attachments {
+	margin-top: 10px;
+	padding-top: 8px;
+	border-top: 1px solid var(--border-light);
+}
+
+.attachments-header {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-bottom: 6px;
+	font-size: 12px;
+	color: var(--text-secondary);
+	font-weight: 600;
+}
+
+.attachments-icon {
+	font-size: 13px;
+	font-family: var(--font-family-emoji);
+}
+
+.attachments-count {
+	display: inline-block;
+	min-width: 18px;
+	padding: 0 4px;
+	background-color: #e8f5e9;
+	border-radius: 3px;
+	color: var(--success-color);
+	font-size: 11px;
+	font-weight: bold;
+	text-align: center;
+}
+
+.attachments-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.attachment-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 6px;
+	background-color: #f9f9f9;
+	border-radius: 4px;
+	font-size: 12px;
+	cursor: pointer;
+	transition: all var(--transition-speed);
+	overflow: hidden;
+	position: relative;
+}
+
+.attachment-item:hover {
+	background-color: #f0f0f0;
+	transform: translateX(2px);
+}
+
+.attachment-item.attachment-downloading {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+.attachment-icon {
+	flex-shrink: 0;
+	font-size: 14px;
+	font-family: var(--font-family-emoji);
+}
+
+.attachment-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-color);
+	font-weight: 500;
+}
+
+.attachment-size {
+	flex-shrink: 0;
+	color: var(--text-muted);
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.attachment-spinner {
+	position: absolute;
+	right: 6px;
+	animation: spin 1s linear infinite;
+	font-family: var(--font-family-emoji);
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.attachment-error {
+	margin-top: 6px;
+	padding: 6px 8px;
+	background-color: #fadbd8;
+	border-radius: 4px;
+	color: var(--error-dark);
+	font-size: 11px;
+	border-left: 2px solid var(--error-color);
 }
 
 /* Column Drag and Drop Styles */
