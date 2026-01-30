@@ -1,3 +1,6 @@
+include:
+  - ./docker-compose.mongodb.yaml
+
 # This is a YAML anchor. We can use it later on so we don;t have to repeat the
 # same configuration all the time.
 # Things starting with 'x-' are ignored by compose.
@@ -5,9 +8,6 @@ x-microservice-base: &base
   env_file: ./backend/.env
   networks:
     - private
-  depends_on:
-    - database
-    - mongodb
 
 services:
   auth:
@@ -76,6 +76,8 @@ services:
       POSTGRES_USER: server
       POSTGRES_PASSWORD: testpass
       POSTGRES_DB: kanban
+    profiles:
+      - postgres
     ports:
       - "5432:5432"
     volumes:
@@ -87,6 +89,8 @@ services:
 
   mongodb:
     image: mongo:8
+    profiles:
+      - mongodb-single
     volumes:
       - mongodb_data:/data/db
       - ./seed:/docker-entrypoint-initdb.d:ro

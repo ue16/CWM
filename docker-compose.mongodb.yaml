@@ -1,0 +1,30 @@
+x-mongodb-base: &mongodb-base
+  image: mongo:8
+  command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+  profiles:
+    - mongodb-cluster
+  networks:
+    - private
+
+services:
+  mongodb-replica-1:
+    <<: *mongodb-base
+    volumes:
+      - mongo-data-1:/data/db
+      - ./seed/mongodb-cluster:/initfiles:ro
+    depends_on:
+      - mongodb-replica-2
+      - mongodb-replica-3
+  mongodb-replica-2:
+    <<: *mongodb-base
+    volumes:
+      - mongo-data-2:/data/db
+  mongodb-replica-3:
+    <<: *mongodb-base
+    volumes:
+      - mongo-data-3:/data/db
+
+volumes:
+  mongo-data-1:
+  mongo-data-2:
+  mongo-data-3:

@@ -50,7 +50,7 @@ func NewMongoDB(connString string) (*MongoDB, error) {
 		db, err = connect(ctx)
 		if err == nil {
 			db.cancel = cancel
-			splitConnString := strings.Split(connString, "/")
+			splitConnString := strings.Split(strings.Split(connString, "?")[0], "/")
 			if len(splitConnString) < 4 {
 				cancel()
 				return nil, fmt.Errorf("mongodb connection string does not contain database name")
