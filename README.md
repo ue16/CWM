@@ -1,4 +1,8 @@
-# Projekt: Interaktives Kanban-Board
+# CWM
+
+cloud_docker project
+
+## Interaktives Kanban-Board
 
 In diesem Projekt entwickelt ihr schrittweise ein **interaktives Kanban-Board** – eine Anwendung, die euch nicht nur praktische Erfahrungen mit modernen Webtechnologien gibt, sondern auch zeigt, wie Cloud-native Anwendungen aufgebaut sind.
 
